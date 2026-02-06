@@ -1,0 +1,13 @@
+First lecture / exercise session:
+- used 2to3 to convert python2 into python3, but the 2to3 command was not available by default.
+- Instead of running 2to3 directly, ran it using Python itself (python3 -m lib2to3 -w minitwit.py), as it is deprecated or something
+  along those lines for the newest versions of python i think.
+- Remember to add -w flag to actually write changes to the file, else it will just show possible changes.
+
+- Some of the workzeug imports were outdated. Easy fix to update, as they just needed to be updated to used
+  workzeug.security instead. (https://werkzeug.palletsprojects.com/en/stable/utils/)
+- Code crashed as a function read the database as bytes instead of encoded as UTF-8. 
+  Fixed by adding a function to force it to read it as UTF-8 (db.cursor().executescript(f.read().decode("utf-8")))
+- Application initially wanted to run on port 5000, but port 5000 was already used by some important process on mac.
+  Changed it to run on 5001.
+- Downloaded python dependencies (pip install flask, pip install workzeug)
