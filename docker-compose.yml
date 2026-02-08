@@ -1,0 +1,8 @@
+services:
+  minitwit-web:
+    build: ./minitwit-cs
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./minitwit-cs:/app
+      - /tmp:/tmp
