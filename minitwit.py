@@ -28,7 +28,6 @@ SECRET_KEY = 'development key'
 # create our little application :)
 app = FastAPI()
 
-# Configuration must be in this order for Static/Templates to work together
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
@@ -124,78 +123,6 @@ def public_timeline(
         "endpoint": 'public_timeline'
     })
 
-@app.get('/{username}')
-def user_timeline(
-    username: str,
-    request: Request, 
-    db = Depends(get_db)
-):
-    """Displays a user's tweets."""
-    profile_user = query_db(db, 'select * from user where username = ?',
-                            [username], one=True)
-    
-    if profile_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user_id = request.session.get('user_id')
-    user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True) if user_id else None
-    
-    followed = False
-    if user_id:
-        followed = query_db(db, '''select 1 from follower where
-            follower.who_id = ? and follower.whom_id = ?''',
-            [user_id, profile_user['user_id']], one=True) is not None
-
-    return templates.TemplateResponse('timeline.html', {
-        "request": request,
-        "messages": query_db(db, '''
-            select message.*, user.* from message, user where
-            user.user_id = message.author_id and user.user_id = ?
-            order by message.pub_date desc limit ?''',
-            [profile_user['user_id'], PER_PAGE]),
-        "followed": followed,
-        "profile_user": profile_user,
-        "user": user,
-        "endpoint": 'user_timeline'
-    })
-
-@app.get('/{username}/follow')
-def follow_user(
-    username: str, 
-    request: Request, 
-    db = Depends(get_db)
-):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Please log in first")
-
-    whom_id = get_user_id(db, username)
-    if whom_id is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    db.execute('insert into follower (who_id, whom_id) values (?, ?)',
-                [user_id, whom_id])
-    db.commit()
-    return RedirectResponse(url=f"/{username}", status_code=303)
-
-@app.get('/{username}/unfollow')
-def unfollow_user(
-    username: str, 
-    request: Request, 
-    db = Depends(get_db)
-):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Log in to unfollow")
-
-    whom_id = get_user_id(db, username)
-    if whom_id is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    db.execute('delete from follower where who_id=? and whom_id=?',
-                [user_id, whom_id])
-    db.commit()
-    return RedirectResponse(url=f"/{username}", status_code=303)
 
 @app.post('/add_message')
 def add_message(
@@ -279,6 +206,79 @@ def register(
         "email": email,
         "user": None
     })
+
+@app.get('/{username}')
+def user_timeline(
+    username: str,
+    request: Request, 
+    db = Depends(get_db)
+):
+    """Displays a user's tweets."""
+    profile_user = query_db(db, 'select * from user where username = ?',
+                            [username], one=True)
+    
+    if profile_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_id = request.session.get('user_id')
+    user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True) if user_id else None
+    
+    followed = False
+    if user_id:
+        followed = query_db(db, '''select 1 from follower where
+            follower.who_id = ? and follower.whom_id = ?''',
+            [user_id, profile_user['user_id']], one=True) is not None
+
+    return templates.TemplateResponse('timeline.html', {
+        "request": request,
+        "messages": query_db(db, '''
+            select message.*, user.* from message, user where
+            user.user_id = message.author_id and user.user_id = ?
+            order by message.pub_date desc limit ?''',
+            [profile_user['user_id'], PER_PAGE]),
+        "followed": followed,
+        "profile_user": profile_user,
+        "user": user,
+        "endpoint": 'user_timeline'
+    })
+
+@app.get('/{username}/follow')
+def follow_user(
+    username: str, 
+    request: Request, 
+    db = Depends(get_db)
+):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Please log in first")
+
+    whom_id = get_user_id(db, username)
+    if whom_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.execute('insert into follower (who_id, whom_id) values (?, ?)',
+                [user_id, whom_id])
+    db.commit()
+    return RedirectResponse(url=f"/{username}", status_code=303)
+
+@app.get('/{username}/unfollow')
+def unfollow_user(
+    username: str, 
+    request: Request, 
+    db = Depends(get_db)
+):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Log in to unfollow")
+
+    whom_id = get_user_id(db, username)
+    if whom_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.execute('delete from follower where who_id=? and whom_id=?',
+                [user_id, whom_id])
+    db.commit()
+    return RedirectResponse(url=f"/{username}", status_code=303)
 
 @app.get('/logout')
 def logout(request: Request):
