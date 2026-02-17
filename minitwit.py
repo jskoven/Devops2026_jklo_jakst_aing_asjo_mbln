@@ -184,6 +184,11 @@ def register(
         "user": None
     })
 
+@app.get('/logout')
+def logout(request: Request):
+    request.session.pop('user_id', None)
+    return RedirectResponse(url='/public', status_code=303)
+
 @app.get('/{username}')
 def user_timeline(
     username: str,
@@ -257,10 +262,7 @@ def unfollow_user(
     db.commit()
     return RedirectResponse(url=f"/{username}", status_code=303)
 
-@app.get('/logout')
-def logout(request: Request):
-    request.session.pop('user_id', None)
-    return RedirectResponse(url='/public', status_code=303)
+
 
 if __name__ == '__main__':
     import uvicorn
