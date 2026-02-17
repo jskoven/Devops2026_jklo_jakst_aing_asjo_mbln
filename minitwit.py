@@ -7,24 +7,22 @@
 """
 
 import time
-import sqlite3
 from hashlib import md5
 from datetime import datetime
-from contextlib import closing
 from werkzeug.security import check_password_hash, generate_password_hash
-
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from db_handler import query_db, get_db
+from API_handler import router as API_handler
 
 # configuration
 DATABASE = '/tmp/minitwit.db'
 PER_PAGE = 30
 DEBUG = True
 SECRET_KEY = 'development key'
-
 # create our little application :)
 app = FastAPI()
 
@@ -32,30 +30,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
-def connect_db():
-    """Returns a new connection to the database."""
-    return sqlite3.connect(DATABASE)
-
-def get_db():
-    db = connect_db()
-    db.row_factory = sqlite3.Row
-    try:
-        yield db
-    finally:
-        db.close()
-
-def init_db():
-    """Creates the database tables."""
-    with closing(connect_db()) as db:
-        with open('schema.sql', mode='r', encoding='utf-8') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-def query_db(db, query, args=(), one=False):
-    """Queries the database and returns a list of dictionaries."""
-    cur = db.execute(query, args)
-    rv = [dict(row) for row in cur.fetchall()]
-    return (rv[0] if rv else None) if one else rv
+# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
+# When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
+app.include_router(API_handler)
 
 def get_user_id(db, username):
     """Convenience method to look up the id for a username."""
