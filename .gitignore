@@ -13,3 +13,5 @@ env/
 # IDE files
 .vscode/
 .idea/
+
+.vagrant/
