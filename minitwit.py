@@ -30,9 +30,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
-# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
-# When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
-app.include_router(API_handler)
+
 
 def get_user_id(db, username):
     """Convenience method to look up the id for a username."""
@@ -263,6 +261,11 @@ def unfollow_user(
     return RedirectResponse(url=f"/{username}", status_code=303)
 
 
+
+
+# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
+# When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
+app.include_router(API_handler)
 
 if __name__ == '__main__':
     import uvicorn
