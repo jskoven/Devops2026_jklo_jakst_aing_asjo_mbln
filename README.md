@@ -27,7 +27,9 @@ Note: Your private SSH key is expected to be at ~/.ssh/id_rsa
 
 ### 3. Usage
 
-Live App: http://161.35.68.148:5001
+- Find IP:
+  `vagrant ssh minitwit-server -c "curl ifconfig.me"`
+- Live Ap at: http://<YOUR_IP>:5001
 
 - Update:
   `vagrant rsync`
