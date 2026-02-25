@@ -1,0 +1,12 @@
+version: '3.3'
+
+services:
+  minitwitimage:
+    image: ${DOCKER_USERNAME}/minitwitimage:latest
+    container_name: minitwit
+    ports:
+      - '5000:5000'
+    volumes:
+      # This links the DigitalOcean /tmp folder to the container
+      # so the SQLite database (minitwit.db) isn't deleted on deploy.
+      - /tmp:/tmp
