@@ -1,7 +1,8 @@
 import sqlite3
+import os
 from contextlib import closing
 
-DATABASE = '/tmp/minitwit.db'
+DATABASE = os.getenv("DATABASE_PATH", "/tmp/minitwit.db")
 
 def connect_db():
     """Returns a new connection to the database."""
