@@ -1,9 +1,20 @@
-
 services:
-  web:
-    build: .
+  minitwit:
+    image: ${DOCKER_USERNAME}/minitwitimage:latest
     ports:
-      - "5000:5000"
-    volumes:
-      - /tmp/minitwit.db:/tmp/minitwit.db
- 
+      - "80:5000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@mysql:3306/minitwit
+    depends_on:
+      - mysql
+
+  mysql:
+    image: ${DOCKER_USERNAME}/mysqlimage:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=minitwit
+
+  flagtool:
+    image: ${DOCKER_USERNAME}/flagtoolimage:latest
+    depends_on:
+      - mysql
