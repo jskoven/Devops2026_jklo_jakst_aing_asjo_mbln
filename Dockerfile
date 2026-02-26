@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-CMD ["uvicorn", "minitwit:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "minitwit:app", "--host", "0.0.0.0", "--port", "5001"]
