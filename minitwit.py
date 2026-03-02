@@ -25,6 +25,9 @@ DEBUG = True
 SECRET_KEY = 'development key'
 # create our little application :)
 app = FastAPI()
+# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
+# When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
+app.include_router(API_handler)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
@@ -263,9 +266,7 @@ def unfollow_user(
 
 
 
-# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
-# When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
-app.include_router(API_handler)
+
 
 if __name__ == '__main__':
     import uvicorn
