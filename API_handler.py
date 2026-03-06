@@ -109,6 +109,7 @@ async def follow_unfollow_user(username: str, request: Request, db = Depends(get
     update_latest(request)
     user_id = get_user_id(db, username)
     if not user_id:
+        print(f"ERROR: {user_id} attempted to follow/unfollow, but is not in the database!")
         raise HTTPException(status_code=404, detail="User not found")
 
     data = await request.json()
@@ -117,10 +118,17 @@ async def follow_unfollow_user(username: str, request: Request, db = Depends(get
         if whom_id:
             db.execute("INSERT INTO follower (who_id, whom_id) VALUES (?, ?)", [user_id, whom_id])
             db.commit()
+        else: 
+            print(f"ERROR: {user_id} attempted to follow {whom_id} - {whom_id} not in database!")
+            raise HTTPException(status_code=404, detail="User not found")
     elif "unfollow" in data:
         whom_id = get_user_id(db, data["unfollow"])
         if whom_id:
             db.execute("DELETE FROM follower WHERE who_id = ? AND whom_id = ?", [user_id, whom_id])
             db.commit()
+        else:
+            print(f"ERROR: {user_id} attempted to unfollow {whom_id} - {whom_id} not in database!")
+            raise HTTPException(status_code=404, detail="User not found")
+
 
     return Response(status_code=204)
