@@ -1,0 +1,15 @@
+on:
+  push:
+    branches: [ staging ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run simulator API tests
+        run: |
+          python minitwit.py & APP_PID=$!
+          sleep 5
+          python -m pytest minitwit_sim_api_test.py
+          kill $APP_PID
