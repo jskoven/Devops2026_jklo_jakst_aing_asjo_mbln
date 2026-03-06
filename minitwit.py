@@ -6,6 +6,7 @@
     A microblogging application written with FastAPI and sqlite3.
 """
 
+from contextlib import asynccontextmanager
 import time
 from hashlib import md5
 from datetime import datetime
@@ -15,7 +16,11 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from db_handler import query_db, get_db
+from db_handler import init_db, get_session, Session, SessionDep
+from follower import Follower
+from message import Message
+from user import User 
+from sqlmodel import desc, or_, select 
 from API_handler import router as API_handler
 
 # configuration
@@ -23,8 +28,14 @@ DATABASE = '/tmp/minitwit.db'
 PER_PAGE = 30
 DEBUG = True
 SECRET_KEY = 'development key'
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db() 
+    yield 
+    print("Shutting down...")
+
 # create our little application :)
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 # This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
 # When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
 app.include_router(API_handler)
@@ -33,13 +44,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
-
-
-def get_user_id(db, username):
+def get_user_id(username,session:Session):
     """Convenience method to look up the id for a username."""
-    rv = db.execute('select user_id from user where username = ?',
-                       [username]).fetchone()
-    return rv[0] if rv else None
+    statement = select(User.user_id).where(User.username == username)
+    result = session.exec(statement).first()
+    return result 
 
 def format_datetime(timestamp):
     """Format a timestamp for display."""
@@ -57,28 +66,42 @@ templates.env.filters['gravatar'] = gravatar_url
 @app.get('/')
 def timeline(
     request: Request, 
-    db = Depends(get_db)
+    session: SessionDep
 ):
     """Shows a users timeline or if no user is logged in it will redirect to public."""
     user_id = request.session.get('user_id')
     if not user_id:
         return RedirectResponse(url='/public', status_code=303)
 
-    user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True)
+    # user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True)
+    user = session.get(User,user_id) 
+
+    followed_ids_query = select(Follower.whom_id).where(Follower.who_id == user_id)
+    followed_ids = session.exec(followed_ids_query).all()
+
+    statement = (
+        select(Message, User) 
+        .join(User, Message.author_id == User.user_id)
+        .where(Message.flagged == 0)
+        .where(
+            or_(
+                Message.author_id == user_id,
+                Message.author_id.in_(followed_ids)
+            )
+        )
+        .order_by(desc(Message.pub_date))
+        .limit(PER_PAGE)
+    )
+
+    results = session.exec(statement).all()
 
     return templates.TemplateResponse('timeline.html', {
         "request": request, 
-        "messages": query_db(db, '''
-            select message.*, user.* from message, user
-            where message.flagged = 0 and message.author_id = user.user_id and (
-                user.user_id = ? or
-                user.user_id in (select whom_id from follower
-                                        where who_id = ?))
-            order by message.pub_date desc limit ?''',
-            [user_id, user_id, PER_PAGE]),
+        "messages": results,
         "user": user,
         "endpoint": 'timeline'
     })
+
 
 @app.get('/public')
 def public_timeline(
