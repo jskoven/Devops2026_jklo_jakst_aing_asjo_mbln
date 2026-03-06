@@ -21,11 +21,14 @@ Vagrant.configure("2") do |config|
       
       
       if [ -f /vagrant/requirements.txt ]; then
-        pip install -r /vagrant/requirements.txt
+        pip install --upgrade -r /vagrant/requirements.txt
       fi
 
       # Setup the database file
-      sqlite3 /tmp/minitwit.db < /vagrant/schema.sql
+      # Only initialize the db if the file doesnt exist yet
+      if [ ! -f /tmp/minitwit.db ]; then
+        sqlite3 /tmp/minitwit.db < /vagrant/schema.sql
+      fi
       
       echo "Server IP:"
       hostname -I | cut -d" " -f1

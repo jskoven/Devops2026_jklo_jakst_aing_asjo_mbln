@@ -6,7 +6,7 @@ docker pull ${DOCKER_USERNAME}/minitwitimage:latest
 
 # 2. Stop and remove the old container
 docker stop minitwit || true
-docker rm minitwit || true
+docker rm -f minitwit || true
 docker image prune -f
 
 # 3. Run the new version
