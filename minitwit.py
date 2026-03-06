@@ -118,8 +118,8 @@ def add_message(
         db.commit()
     return RedirectResponse(url='/', status_code=303)
 
-@app.api_route('/login', methods=['GET', 'POST'])
-def login(
+@app.api_route('/login_UI', methods=['GET', 'POST'])
+def login_UI(
     request: Request, 
     db = Depends(get_db),
     username: str = Form(None), 
@@ -146,8 +146,8 @@ def login(
         "user": None
     })
 
-@app.api_route('/register', methods=['GET', 'POST'])
-def register(
+@app.api_route('/register_UI', methods=['GET', 'POST'])
+def register_UI(
     request: Request,
     db = Depends(get_db),
     username: str = Form(None),
@@ -175,7 +175,7 @@ def register(
                 username, email, pw_hash) values (?, ?, ?)''',
                 [username, email, generate_password_hash(password)])
             db.commit()
-            return RedirectResponse(url='/login', status_code=303)
+            return RedirectResponse(url='/login_UI', status_code=303)
 
     return templates.TemplateResponse('register.html', {
         "request": request, 
@@ -185,8 +185,8 @@ def register(
         "user": None
     })
 
-@app.get('/logout')
-def logout(request: Request):
+@app.get('/logout_UI')
+def logout_UI(request: Request):
     request.session.pop('user_id', None)
     return RedirectResponse(url='/public', status_code=303)
 
