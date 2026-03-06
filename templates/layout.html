@@ -7,11 +7,11 @@
   {% if user %}
     <a href="/">my timeline</a> |
     <a href="/public">public timeline</a> |
-    <a href="/logout">sign out [{{ user.username }}]</a>
+    <a href="/logout_UI">sign out [{{ user.username }}]</a>
   {% else %}
     <a href="/public">public timeline</a> |
-    <a href="/register">sign up</a> |
-    <a href="/login">sign in</a>
+    <a href="/register_UI">sign up</a> |
+    <a href="/login_UI">sign in</a>
   {% endif %}
   </div>
 
