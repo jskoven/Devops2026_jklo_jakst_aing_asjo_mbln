@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from db_handler import init_db, get_session, Session, SessionDep
+from db_handler import init_db, get_session, Session, SessionDep, get_user_id
 from follower import Follower
 from message import Message
 from user import User 
@@ -44,11 +44,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
-def get_user_id(username,session:Session):
-    """Convenience method to look up the id for a username."""
-    statement = select(User.user_id).where(User.username == username)
-    result = session.exec(statement).first()
-    return result 
+# def get_user_id(username,session:Session):
+#     """Convenience method to look up the id for a username."""
+#     statement = select(User.user_id).where(User.username == username)
+#     result = session.exec(statement).first()
+#     return result 
 
 def format_datetime(timestamp):
     """Format a timestamp for display."""
@@ -225,7 +225,7 @@ def register(
             new_usr = User(
                 username = username,
                 email = email, 
-                pw_hash_string= generate_password_hash(password) 
+                pw_hash= generate_password_hash(password) 
             )
             # db.execute('''insert into user (
             #     username, email, pw_hash) values (?, ?, ?)''',
@@ -269,7 +269,7 @@ def user_timeline(
     user_id = request.session.get('user_id')
     #user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True) if user_id else None
 
-    user = session.get(User,user_id )
+    user = session.get(User,user_id ) is not None 
     
     followed = False
     if user_id:
@@ -292,18 +292,21 @@ def user_timeline(
         #     [profile_user['user_id'], PER_PAGE]),
         msg = (
             select(Message,User)
-            .join(User,Message.author_id == user.user_id)
-            .where(user.user_id == profile_user.user_id) 
+            .join(User,Message.author_id == User.user_id)
+            .where(User.user_id == profile_user.user_id) 
             .order_by(desc(Message.pub_date))
 
         )
+
+        msg_res = session.exec(msg).all() 
+        followed_res = session.exec(followed).all()
     
 
 
     return templates.TemplateResponse('timeline.html', {
         "request": request,
-        "messages": msg,
-        "followed": followed,
+        "messages": msg_res,
+        "followed": followed_res,
         "profile_user": profile_user,
         "user": user,
         "endpoint": 'user_timeline'

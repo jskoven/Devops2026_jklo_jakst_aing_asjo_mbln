@@ -5,12 +5,13 @@ from typing import Annotated
 from fastapi import Depends
 from user import User
 from message import Message
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import SQLModel, Session, create_engine, select
 
 # DATABASE = os.getenv("DATABASE_PATH", "/tmp/minitwit.db")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./minitwit.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_PATH = os.getenv("DATABASE_PATH", "/tmp/minitwit.db")
+sqlite_url = f"sqlite:///{DATABASE_PATH}"
+engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 
 # def init_db():
 #     """Creates the database tables."""
@@ -27,6 +28,12 @@ def get_session():
         yield session
 
 SessionDep = Annotated[Session, Depends(get_session)]
+
+def get_user_id(username,session:Session):
+    """Convenience method to look up the id for a username."""
+    statement = select(User.user_id).where(User.username == username)
+    result = session.exec(statement).first()
+    return result 
 
 # def get_db():
 #     db = connect_db()
