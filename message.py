@@ -2,7 +2,7 @@
 from sqlmodel import Field, SQLModel
 
 class MessageBase(SQLModel): 
-    text: str = Field(Nullable = False) 
+    text: str = Field(nullable = False) 
     pub_date: int 
 
 class Message(MessageBase,table=True): 
