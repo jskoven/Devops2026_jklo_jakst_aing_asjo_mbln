@@ -1,20 +1,12 @@
 services:
   minitwit:
-    image: ${DOCKER_USERNAME}/minitwitimage:latest
+    build: .
+    container_name: minitwit-dev
     ports:
-      - "80:5000"
+      - "5001:5001" 
     environment:
-      - DATABASE_URL=mysql+pymysql://root:password@mysql:3306/minitwit
-    depends_on:
-      - mysql
-
-  mysql:
-    image: ${DOCKER_USERNAME}/mysqlimage:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=minitwit
-
-  flagtool:
-    image: ${DOCKER_USERNAME}/flagtoolimage:latest
-    depends_on:
-      - mysql
+      - DATABASE_PATH=/data/minitwit.db
+    volumes:
+      - .:/app
+      - /tmp:/data
+    command: uvicorn minitwit:app --host 0.0.0.0 --port 5001 --reload

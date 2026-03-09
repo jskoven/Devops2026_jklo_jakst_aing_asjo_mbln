@@ -145,6 +145,7 @@ async def follow_unfollow_user(username: str, request: Request, session:SessionD
     update_latest(request)
     user_id = get_user_id(username,session)
     if not user_id:
+        print(f"ERROR: {user_id} attempted to follow/unfollow, but is not in the database!")
         raise HTTPException(status_code=404, detail="User not found")
 
     data = await request.json()

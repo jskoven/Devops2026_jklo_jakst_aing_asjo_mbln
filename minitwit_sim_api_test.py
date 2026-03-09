@@ -5,9 +5,10 @@ import sqlite3
 import requests
 from pathlib import Path
 from contextlib import closing
+import pytest
 
 
-BASE_URL = 'http://127.0.0.1:5001'
+BASE_URL = os.getenv('TEST_URL', 'http://localhost:5001')
 DATABASE = "/tmp/minitwit.db"
 USERNAME = 'simulator'
 PWD = 'super_safe!'
@@ -26,12 +27,17 @@ def init_db():
         db.commit()
 
 
-# Empty the database and initialize the schema again
-Path(DATABASE).unlink()
-init_db()
+@pytest.fixture(scope="module", autouse=True)
+def setup_database():
+    if os.path.exists(DATABASE):
+        os.remove(DATABASE)
+    init_db()
+    yield
+    if os.path.exists(DATABASE): 
+        os.remove(DATABASE)
 
 
-def test_latest():
+def test_latest(setup_database):
     # post something to update LATEST
     url = f"{BASE_URL}/register"
     data = {'username': 'test', 'email': 'test@test', 'pwd': 'foo'}
@@ -47,9 +53,9 @@ def test_latest():
     assert response.json()['latest'] == 1337
 
 
-def test_register():
+def test_register(setup_database):
     username = 'a'
-    email = 'a@a.a'
+    email = 'a_test@a.a'
     pwd = 'a'
     data = {'username': username, 'email': email, 'pwd': pwd}
     params = {'latest': 1}
@@ -63,7 +69,7 @@ def test_register():
     assert response.json()['latest'] == 1
 
 
-def test_create_msg():
+def test_create_msg(setup_database):
     username = 'a'
     data = {'content': 'Blub!'}
     url = f'{BASE_URL}/msgs/{username}'
@@ -77,7 +83,7 @@ def test_create_msg():
     assert response.json()['latest'] == 2
 
 
-def test_get_latest_user_msgs():
+def test_get_latest_user_msgs(setup_database):
     username = 'a'
 
     query = {'no': 20, 'latest': 3}
@@ -97,7 +103,7 @@ def test_get_latest_user_msgs():
     assert response.json()['latest'] == 3
 
 
-def test_get_latest_msgs():
+def test_get_latest_msgs(setup_database):
     username = 'a'
     query = {'no': 20, 'latest': 4}
     url = f'{BASE_URL}/msgs'
@@ -116,7 +122,7 @@ def test_get_latest_msgs():
     assert response.json()['latest'] == 4
 
 
-def test_register_b():
+def test_register_b(setup_database):
     username = 'b'
     email = 'b@b.b'
     pwd = 'b'
@@ -132,7 +138,7 @@ def test_register_b():
     assert response.json()['latest'] == 5
 
 
-def test_register_c():
+def test_register_c(setup_database):
     username = 'c'
     email = 'c@c.c'
     pwd = 'c'
@@ -147,7 +153,7 @@ def test_register_c():
     assert response.json()['latest'] == 6
 
 
-def test_follow_user():
+def test_follow_user(setup_database):
     username = 'a'
     url = f'{BASE_URL}/fllws/{username}'
     data = {'follow': 'b'}
@@ -175,7 +181,7 @@ def test_follow_user():
     assert response.json()['latest'] == 9
 
 
-def test_a_unfollows_b():
+def test_a_unfollows_b(setup_database):
     username = 'a'
     url = f'{BASE_URL}/fllws/{username}'
 
