@@ -69,7 +69,7 @@ async def messages(request: Request, session:SessionDep):
             .join(User, Message.author_id == User.user_id)  
             .where(Message.flagged ==0)
             .order_by(desc(Message.pub_date))
-            .limit(PER_PAGE)
+            .limit(no_msgs)
             
             )
     msgs = session.exec(statement).all()
@@ -94,7 +94,7 @@ async def user_messages(username: str, request: Request, session:SessionDep):
                  .where(Message.flagged==0,
                         User.user_id == user_id)
                         .order_by(desc(Message.pub_date))
-                        .limit(PER_PAGE))
+                        .limit(no_msgs))
     
     msgs = session.exec(statement).all()
     
