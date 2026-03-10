@@ -180,13 +180,15 @@ def login_UI(
     error = None
     if request.method == 'POST':
         # user = query_db(db, 'select * from user where username = ?', [username], one=True)
-        user = session.get(User,username)
+        statement = (select(User) 
+                .where(User.username == username))
+        user = session.exec(statement).first()
         if user is None:
             error = 'Invalid username'
-        elif not check_password_hash(user['pw_hash'], password):
+        elif not check_password_hash(user.pw_hash, password):
             error = 'Invalid password'
         else:
-            request.session['user_id'] = user['user_id']
+            request.session['user_id'] = user.user_id
             return RedirectResponse(url='/', status_code=303)
 
     return templates.TemplateResponse('login.html', {
@@ -269,9 +271,9 @@ def user_timeline(
     user_id = request.session.get('user_id')
     #user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True) if user_id else None
 
-    user = session.get(User,user_id ) is not None 
+    user = session.get(User,user_id) if user_id else None 
     
-    followed = False
+    followed_res = False 
     if user_id:
         # followed = query_db(db, '''select 1 from follower where
         #     follower.who_id = ? and follower.whom_id = ?''',
@@ -282,26 +284,26 @@ def user_timeline(
         .where(Follower.who_id == user_id,
                Follower.whom_id == profile_user.user_id)
 
-        .order_by(desc(Message.pub_date))
-        .limit(PER_PAGE)) is not None 
+        )
+        followed_res = session.exec(followed).first() is not None 
+
 
         # query_db(db, '''
         #     select message.*, user.* from message, user where
         #     user.user_id = message.author_id and user.user_id = ?
         #     order by message.pub_date desc limit ?''',
         #     [profile_user['user_id'], PER_PAGE]),
-        msg = (
+    msg = (
             select(Message,User)
             .join(User,Message.author_id == User.user_id)
             .where(User.user_id == profile_user.user_id) 
             .order_by(desc(Message.pub_date))
+            .limit(PER_PAGE)
 
         )
 
-        msg_res = session.exec(msg).all() 
-        followed_res = session.exec(followed).all()
+    msg_res = session.exec(msg).all() 
     
-
 
     return templates.TemplateResponse('timeline.html', {
         "request": request,
@@ -360,8 +362,11 @@ def unfollow_user(
     unfollow = (select(Follower)
                 .where(Follower.who_id==user_id,
                        Follower.whom_id == whom_id))
-    session.delete(unfollow) 
-    session.commit()
+    
+    record_to_unfollow = session.exec(unfollow).first()
+    if record_to_unfollow:
+        session.delete(record_to_unfollow) 
+        session.commit()
     
     return RedirectResponse(url=f"/{username}", status_code=303)
 

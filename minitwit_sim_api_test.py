@@ -5,11 +5,12 @@ import sqlite3
 import requests
 from pathlib import Path
 from contextlib import closing
+from minitwit import Follower,Message,User
+from sqlmodel import SQLModel, Session, create_engine
 import pytest
 
-
 BASE_URL = os.getenv('TEST_URL', 'http://localhost:5001')
-DATABASE = "/tmp/minitwit.db"
+DATABASE = "/tmp/minitwit_test.db"
 USERNAME = 'simulator'
 PWD = 'super_safe!'
 CREDENTIALS = ':'.join([USERNAME, PWD]).encode('ascii')
@@ -17,27 +18,21 @@ ENCODED_CREDENTIALS = base64.b64encode(CREDENTIALS).decode()
 HEADERS = {'Connection': 'close',
            'Content-Type': 'application/json',
            f'Authorization': f'Basic {ENCODED_CREDENTIALS}'}
-
+test_db_url = f"sqlite:///{DATABASE}"
+test_engine = create_engine(test_db_url, connect_args={"check_same_thread": False})
 
 def init_db():
     """Creates the database tables."""
-    with closing(sqlite3.connect(DATABASE)) as db:
-        with open("schema.sql") as fp:
-            db.cursor().executescript(fp.read())
-        db.commit()
-
+    SQLModel.metadata.create_all(test_engine)
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_database():
-    if os.path.exists(DATABASE):
-        os.remove(DATABASE)
-    init_db()
+def cleanup_database():
     yield
     if os.path.exists(DATABASE): 
         os.remove(DATABASE)
 
 
-def test_latest(setup_database):
+def test_latest():
     # post something to update LATEST
     url = f"{BASE_URL}/register"
     data = {'username': 'test', 'email': 'test@test', 'pwd': 'foo'}
@@ -53,7 +48,7 @@ def test_latest(setup_database):
     assert response.json()['latest'] == 1337
 
 
-def test_register(setup_database):
+def test_register():
     username = 'a'
     email = 'a_test@a.a'
     pwd = 'a'
@@ -69,7 +64,7 @@ def test_register(setup_database):
     assert response.json()['latest'] == 1
 
 
-def test_create_msg(setup_database):
+def test_create_msg():
     username = 'a'
     data = {'content': 'Blub!'}
     url = f'{BASE_URL}/msgs/{username}'
@@ -83,7 +78,7 @@ def test_create_msg(setup_database):
     assert response.json()['latest'] == 2
 
 
-def test_get_latest_user_msgs(setup_database):
+def test_get_latest_user_msgs():
     username = 'a'
 
     query = {'no': 20, 'latest': 3}
@@ -103,7 +98,7 @@ def test_get_latest_user_msgs(setup_database):
     assert response.json()['latest'] == 3
 
 
-def test_get_latest_msgs(setup_database):
+def test_get_latest_msgs():
     username = 'a'
     query = {'no': 20, 'latest': 4}
     url = f'{BASE_URL}/msgs'
@@ -122,7 +117,7 @@ def test_get_latest_msgs(setup_database):
     assert response.json()['latest'] == 4
 
 
-def test_register_b(setup_database):
+def test_register_b():
     username = 'b'
     email = 'b@b.b'
     pwd = 'b'
@@ -138,7 +133,7 @@ def test_register_b(setup_database):
     assert response.json()['latest'] == 5
 
 
-def test_register_c(setup_database):
+def test_register_c():
     username = 'c'
     email = 'c@c.c'
     pwd = 'c'
@@ -153,7 +148,7 @@ def test_register_c(setup_database):
     assert response.json()['latest'] == 6
 
 
-def test_follow_user(setup_database):
+def test_follow_user():
     username = 'a'
     url = f'{BASE_URL}/fllws/{username}'
     data = {'follow': 'b'}
@@ -181,7 +176,7 @@ def test_follow_user(setup_database):
     assert response.json()['latest'] == 9
 
 
-def test_a_unfollows_b(setup_database):
+def test_a_unfollows_b():
     username = 'a'
     url = f'{BASE_URL}/fllws/{username}'
 

@@ -8,4 +8,4 @@ services:
     volumes:
       - /tmp:/tmp
     environment:
-      - DATABASE_PATH=/tmp/minitwit.db
+      - DATABASE_PATH=${DATABASE_PATH:-/tmp/minitwit.db}

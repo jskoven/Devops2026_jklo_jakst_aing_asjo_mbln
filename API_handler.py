@@ -65,8 +65,8 @@ async def messages(request: Request, session:SessionDep):
     #     WHERE message.flagged = 0 AND message.author_id = user.user_id
     #     ORDER BY message.pub_date DESC LIMIT ?""", [no_msgs])
     
-    statement = (select(User,Message)
-            .join(User, Message.author_id == User.user_id)  
+    statement = (select(Message,User)
+            .join(Message, User.user_id == Message.author_id)  
             .where(Message.flagged ==0)
             .order_by(desc(Message.pub_date))
             .limit(no_msgs)
@@ -74,7 +74,7 @@ async def messages(request: Request, session:SessionDep):
             )
     msgs = session.exec(statement).all()
     
-    return [{"content": m["text"], "pub_date": m["pub_date"], "user": m["username"]} for m in msgs]
+    return [{"content": m.text, "pub_date": m.pub_date, "user": u.username} for m, u in msgs]
 
 @router.get("/msgs/{username}")
 async def user_messages(username: str, request: Request, session:SessionDep):
@@ -98,7 +98,7 @@ async def user_messages(username: str, request: Request, session:SessionDep):
     
     msgs = session.exec(statement).all()
     
-    return [{"content": m["text"], "pub_date": m["pub_date"], "user": m["username"]} for m in msgs]
+    return [{"content": m.text, "pub_date": m.pub_date, "user": u.username} for m, u in msgs]
 
 @router.post("/msgs/{username}")
 async def post_message(username: str, request: Request, session:SessionDep):
@@ -132,13 +132,13 @@ async def get_followers(username: str, request: Request, session:SessionDep):
     #     WHERE follower.who_id = ? LIMIT ?
     # """, [user_id, no_followers])
 
-    statement = (select(User.username)
+    statement = (select(User)
                  .join(Follower, User.user_id == Follower.whom_id)
                  .where(Follower.who_id == user_id)
                  .limit(no_followers))
     
     res = session.exec(statement).all()
-    return {"follows": [r["username"] for r in res]}
+    return {"follows": [r.username for r in res]}
 
 @router.post("/fllws/{username}")
 async def follow_unfollow_user(username: str, request: Request, session:SessionDep):
@@ -157,15 +157,23 @@ async def follow_unfollow_user(username: str, request: Request, session:SessionD
             new_follower = Follower(who_id = user_id, whom_id=whom_id) 
             session.add(new_follower) 
             session.commit()
+        else:
+            print(f"ERROR: {user_id} attempted to follow {whom_id} - {whom_id} not in database!")
+            raise HTTPException(status_code=404, detail="User not found")
     elif "unfollow" in data:
         whom_id = get_user_id(data["unfollow"],session)
         if whom_id:
             # db.execute("DELETE FROM follower WHERE who_id = ? AND whom_id = ?", [user_id, whom_id])
             # db.commit()
             unfollow = (select(Follower)
-                        .where(who_id = user_id,
-                               whom_id = whom_id))
-            session.add(unfollow) 
-            session.commit()
+                        .where(Follower.who_id == user_id,
+                               Follower.whom_id == whom_id))
+            unfollow_record = session.exec(unfollow).first()
+            if unfollow_record:
+                session.delete(unfollow_record) 
+                session.commit()
+        else: 
+            print(f"ERROR: {user_id} attempted to unfollow {whom_id} - {whom_id} not in database!")
+            raise HTTPException(status_code=404, detail="User not found")
 
     return Response(status_code=204)
