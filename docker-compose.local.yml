@@ -1,0 +1,11 @@
+services:
+  minitwit-local:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    ports:
+      - "5001:5001"
+    volumes:
+      - /tmp:/tmp
+    environment:
+      - DATABASE_PATH=${DATABASE_PATH:-/tmp/minitwit.db}

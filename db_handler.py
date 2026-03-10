@@ -1,35 +1,33 @@
-import sqlite3
 import os
 from contextlib import closing
+from typing import Annotated
 
-DATABASE = os.getenv("DATABASE_PATH", "/tmp/minitwit.db")
+from fastapi import Depends
+from user import User
+from message import Message
+from sqlmodel import SQLModel, Session, create_engine, select
+from sqlalchemy.pool import StaticPool
 
-def connect_db():
-    """Returns a new connection to the database."""
-    return sqlite3.connect(DATABASE, check_same_thread=False)
-
-def get_db():
-    db = connect_db()
-    db.row_factory = sqlite3.Row
-    try:
-        yield db
-    finally:
-        db.close()
+DEFAULT_DB_URL = "/tmp/minitwit.db"
+DATABASE_PATH = os.getenv("DATABASE_PATH", DEFAULT_DB_URL)
+if not DATABASE_PATH.startswith("sqlite:///"):
+    sqlite_url = f"sqlite:///{DATABASE_PATH}"
+else: 
+    sqlite_url = DATABASE_PATH
+engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 
 def init_db():
-    """Creates the database tables."""
-    with closing(connect_db()) as db:
-        with open('schema.sql', mode='r', encoding='utf-8') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
+    SQLModel.metadata.create_all(engine)
 
-def query_db(db, query, args=(), one=False):
-    """Queries the database and returns a list of dictionaries."""
-    cur = db.execute(query, args)
-    rv = [dict(row) for row in cur.fetchall()]
-    return (rv[0] if rv else None) if one else rv
+def get_session():
+    with Session(engine) as session:
+        yield session
 
-def get_user_id(db, username):
-    rv = db.execute('select user_id from user where username = ?', [username]).fetchone()
-    return rv[0] if rv else None
+SessionDep = Annotated[Session, Depends(get_session)]
+
+def get_user_id(username,session:Session):
+    """Convenience method to look up the id for a username."""
+    statement = select(User.user_id).where(User.username == username)
+    result = session.exec(statement).first()
+    return result 
 
