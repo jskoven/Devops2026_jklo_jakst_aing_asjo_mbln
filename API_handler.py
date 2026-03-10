@@ -60,11 +60,6 @@ async def messages(request: Request, session:SessionDep):
     update_latest(request)
     no_msgs = int(request.query_params.get("no", 20))
     
-    # msgs = query_db(db, """
-    #     SELECT message.*, user.* FROM message, user
-    #     WHERE message.flagged = 0 AND message.author_id = user.user_id
-    #     ORDER BY message.pub_date DESC LIMIT ?""", [no_msgs])
-    
     statement = (select(Message,User)
             .join(Message, User.user_id == Message.author_id)  
             .where(Message.flagged ==0)
@@ -84,10 +79,6 @@ async def user_messages(username: str, request: Request, session:SessionDep):
         raise HTTPException(status_code=404, detail="User not found")
         
     no_msgs = int(request.query_params.get("no", 20))
-    # msgs = query_db(db, """
-    #     SELECT message.*, user.* FROM message, user
-    #     WHERE message.flagged = 0 AND user.user_id = message.author_id AND user.user_id = ?
-    #     ORDER BY message.pub_date DESC LIMIT ?""", [user_id, no_msgs])
     
     statement = (select(Message,User)
                  .join(Message,User.user_id == Message.author_id)
@@ -108,12 +99,12 @@ async def post_message(username: str, request: Request, session:SessionDep):
         raise HTTPException(status_code=404, detail="User not found")
         
     data = await request.json()
-    # db.execute("""INSERT INTO message (author_id, text, pub_date, flagged)
-    #               VALUES (?, ?, ?, 0)""", (user_id, data['content'], int(time.time())))
+
     new_msg = Message(
         author_id=user_id,
         text = data['content'],
         pub_date=int(time.time()))
+    
     session.add(new_msg) 
     session.commit()
     return Response(status_code=204)
@@ -126,11 +117,6 @@ async def get_followers(username: str, request: Request, session:SessionDep):
         raise HTTPException(status_code=404, detail="User not found")
 
     no_followers = int(request.query_params.get("no", 20))
-    # res = query_db(db, """
-    #     SELECT user.username FROM user
-    #     INNER JOIN follower ON follower.whom_id = user.user_id
-    #     WHERE follower.who_id = ? LIMIT ?
-    # """, [user_id, no_followers])
 
     statement = (select(User)
                  .join(Follower, User.user_id == Follower.whom_id)
@@ -152,8 +138,6 @@ async def follow_unfollow_user(username: str, request: Request, session:SessionD
     if "follow" in data:
         whom_id = get_user_id(data["follow"],session)
         if whom_id:
-            # db.execute("INSERT INTO follower (who_id, whom_id) VALUES (?, ?)", [user_id, whom_id])
-            # db.commit()
             new_follower = Follower(who_id = user_id, whom_id=whom_id) 
             session.add(new_follower) 
             session.commit()
@@ -163,8 +147,6 @@ async def follow_unfollow_user(username: str, request: Request, session:SessionD
     elif "unfollow" in data:
         whom_id = get_user_id(data["unfollow"],session)
         if whom_id:
-            # db.execute("DELETE FROM follower WHERE who_id = ? AND whom_id = ?", [user_id, whom_id])
-            # db.commit()
             unfollow = (select(Follower)
                         .where(Follower.who_id == user_id,
                                Follower.whom_id == whom_id))

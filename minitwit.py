@@ -44,12 +44,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
-# def get_user_id(username,session:Session):
-#     """Convenience method to look up the id for a username."""
-#     statement = select(User.user_id).where(User.username == username)
-#     result = session.exec(statement).first()
-#     return result 
-
 def format_datetime(timestamp):
     """Format a timestamp for display."""
     return datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d @ %H:%M')
@@ -73,7 +67,6 @@ def timeline(
     if not user_id:
         return RedirectResponse(url='/public', status_code=303)
 
-    # user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True)
     user = session.get(User,user_id) 
 
     followed_ids_query = select(Follower.whom_id).where(Follower.who_id == user_id)
@@ -128,19 +121,7 @@ def public_timeline(
         "user": user,
         "endpoint": 'public_timeline'
     }) 
-
-
-
-    # user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True) if user_id else None
-
-    # messages = query_db(db, '''
-    #     select message.*, user.* from message, user
-    #     where message.flagged = 0 and message.author_id = user.user_id
-    #     order by message.pub_date desc limit ?''', [PER_PAGE])
-
   
-
-
 @app.post('/add_message')
 def add_message(
     session:SessionDep,
@@ -162,9 +143,7 @@ def add_message(
 
     session.add(new_msg)
     session.commit() 
-        # db.execute('''insert into message (author_id, text, pub_date, flagged)
-        #     values (?, ?, ?, 0)''', (user_id, text, int(time.time())))
-        # db.commit()
+
     return RedirectResponse(url='/', status_code=303)
 
 @app.api_route('/login_UI', methods=['GET', 'POST'])
@@ -179,7 +158,6 @@ def login_UI(
         return RedirectResponse(url='/', status_code=303)
     error = None
     if request.method == 'POST':
-        # user = query_db(db, 'select * from user where username = ?', [username], one=True)
         statement = (select(User) 
                 .where(User.username == username))
         user = session.exec(statement).first()
@@ -229,12 +207,9 @@ def register_UI(
                 email = email, 
                 pw_hash= generate_password_hash(password) 
             )
-            # db.execute('''insert into user (
-            #     username, email, pw_hash) values (?, ?, ?)''',
-            #     [username, email, generate_password_hash(password)])
-            # db.commit()
             session.add(new_usr) 
             session.commit()
+
             return RedirectResponse(url='/login_UI', status_code=303)
 
     return templates.TemplateResponse('register.html', {
@@ -254,13 +229,9 @@ def logout_UI(request: Request):
 def user_timeline(
     username: str,
     request: Request, 
-    #db = Depends(get_db)
     session: SessionDep 
 ):
     """Displays a user's tweets."""
-    # profile_user = query_db(db, 'select * from user where username = ?',
-    #                         [username], one=True)
-
     profile_user = session.exec(
         select(User).where(User.username == username)
     ).first()
@@ -269,38 +240,24 @@ def user_timeline(
         raise HTTPException(status_code=404, detail="User not found")
 
     user_id = request.session.get('user_id')
-    #user = query_db(db, 'select * from user where user_id = ?', [user_id], one=True) if user_id else None
-
     user = session.get(User,user_id) if user_id else None 
     
     followed_res = False 
     if user_id:
-        # followed = query_db(db, '''select 1 from follower where
-        #     follower.who_id = ? and follower.whom_id = ?''',
-        #     [user_id, profile_user['user_id']], one=True) is not None
-        
+
         followed = (
         select(Follower)
         .where(Follower.who_id == user_id,
-               Follower.whom_id == profile_user.user_id)
-
-        )
+               Follower.whom_id == profile_user.user_id))
+        
         followed_res = session.exec(followed).first() is not None 
 
-
-        # query_db(db, '''
-        #     select message.*, user.* from message, user where
-        #     user.user_id = message.author_id and user.user_id = ?
-        #     order by message.pub_date desc limit ?''',
-        #     [profile_user['user_id'], PER_PAGE]),
     msg = (
             select(Message,User)
             .join(User,Message.author_id == User.user_id)
             .where(User.user_id == profile_user.user_id) 
             .order_by(desc(Message.pub_date))
-            .limit(PER_PAGE)
-
-        )
+            .limit(PER_PAGE))
 
     msg_res = session.exec(msg).all() 
     
@@ -318,7 +275,6 @@ def user_timeline(
 def follow_user(
     username: str, 
     request: Request, 
-   # db = Depends(get_db)
    session: SessionDep
 
 ):
@@ -334,9 +290,6 @@ def follow_user(
 
     new_followr = Follower(who_id = user_id, 
                            whom_id = whom_id)
-    # db.execute('insert into follower (who_id, whom_id) values (?, ?)',
-    #             [user_id, whom_id])
-    # db.commit()
 
     session.add(new_followr) 
     session.commit()
@@ -346,7 +299,6 @@ def follow_user(
 def unfollow_user(
     username: str, 
     request: Request, 
-    #db = Depends(get_db)
     session : SessionDep
 ):
     user_id = request.session.get('user_id')
@@ -357,8 +309,6 @@ def unfollow_user(
     if whom_id is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # db.execute('delete from follower where who_id=? and whom_id=?',
-    #             [user_id, whom_id])
     unfollow = (select(Follower)
                 .where(Follower.who_id==user_id,
                        Follower.whom_id == whom_id))

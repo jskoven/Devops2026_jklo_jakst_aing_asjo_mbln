@@ -16,13 +16,6 @@ else:
     sqlite_url = DATABASE_PATH
 engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 
-# def init_db():
-#     """Creates the database tables."""
-#     with closing(connect_db()) as db:
-#         with open('schema.sql', mode='r', encoding='utf-8') as f:
-#             db.cursor().executescript(f.read())
-#         db.commit()
-
 def init_db():
     SQLModel.metadata.create_all(engine)
 
@@ -37,24 +30,4 @@ def get_user_id(username,session:Session):
     statement = select(User.user_id).where(User.username == username)
     result = session.exec(statement).first()
     return result 
-
-# def get_db():
-#     db = connect_db()
-#     db.row_factory = sqlite3.Row
-#     try:
-#         yield db
-#     finally:
-#         db.close()
-
-
-
-# def query_db(db, query, args=(), one=False):
-#     """Queries the database and returns a list of dictionaries."""
-#     cur = db.execute(query, args)
-#     rv = [dict(row) for row in cur.fetchall()]
-#     return (rv[0] if rv else None) if one else rv
-
-# def get_user_id(db, username):
-#     rv = db.execute('select user_id from user where username = ?', [username]).fetchone()
-#     return rv[0] if rv else None
 
