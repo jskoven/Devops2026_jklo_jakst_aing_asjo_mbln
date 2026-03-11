@@ -54,7 +54,8 @@ jobs:
 
       - name: Execute remote deployment script
         run: |
-          ssh $SSH_USER@$SSH_HOST -i ~/.ssh/do_ssh_key -o StrictHostKeyChecking=no '/minitwit/deploy.sh'
+          ssh $SSH_USER@$SSH_HOST -i ~/.ssh/do_ssh_key -o StrictHostKeyChecking=no \
+          "export DOCKER_USERNAME='${{ secrets.DOCKER_USERNAME }}' && /minitwit/deploy.sh"
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
