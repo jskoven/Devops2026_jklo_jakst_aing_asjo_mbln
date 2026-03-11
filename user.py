@@ -7,8 +7,10 @@ class UserBase(SQLModel):
 
 
 class User(UserBase,table=True): 
+    __tablename__ = "user"
     pw_hash: str = Field(nullable=False)
     user_id: int | None = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
+
 
 
 class UserPublic(UserBase):
