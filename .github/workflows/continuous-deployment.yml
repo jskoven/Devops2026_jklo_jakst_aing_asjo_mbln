@@ -32,6 +32,22 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
 
+      - name: Build and push prometheus_image
+        uses: docker/build-push-action@v6
+        with:
+          context: ../monitoring/prometheus
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/prometheus_image:latest
+
+      - name: Build and push grafana_image
+        uses: docker/build-push-action@v6
+        with:
+          context: ../monitoring/grafana
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/grafana_image:latest
+
       # COMMENTED OUT: MySQL and Flagtool
       # - name: Build and push mysqlimage ...
       # - name: Build and push flagtoolimage ...
