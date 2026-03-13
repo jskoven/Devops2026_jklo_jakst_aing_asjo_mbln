@@ -1,15 +1,18 @@
+networks:
+  minitwit-network:
+    external: true
+    name: minitwit-network
+
 services:
   minitwit:
     image: ${DOCKER_USERNAME}/minitwitimage:latest
-    
     container_name: minitwit-prod
-    
     ports:
       - "80:5001" 
-    
     environment:
       - DATABASE_URL=postgresql://minitwit_admin:12345@10.114.0.2:5432/minitwit
-
+    networks:
+      - itu-minitwit-network
     depends_on:
       - grafana
       - prometheus
@@ -26,6 +29,8 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
+    networks:
+      - minitwit-network
 
   grafana:
     build: 
@@ -35,6 +40,8 @@ services:
     container_name: grafana
     ports:
       - "3000:3000"
+    networks:
+      - itu-minitwit-network
     volumes:
       - grafana-storage:/var/lib/grafana
     restart: always
