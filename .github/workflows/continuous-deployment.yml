@@ -31,6 +31,18 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/do_ssh_key
+          chmod 600 ~/.ssh/do_ssh_key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Create monitoring folder
+        run: |
+          mkdir ./monitoring
       
       - name: Copy monitoring files to server
         run: |
@@ -43,7 +55,7 @@ jobs:
       - name: Build and push prometheus_image
         uses: docker/build-push-action@v6
         with:
-          context: ../monitoring/prometheus
+          context: ./monitoring/prometheus
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/prometheus_image:latest
@@ -51,7 +63,7 @@ jobs:
       - name: Build and push grafana_image
         uses: docker/build-push-action@v6
         with:
-          context: ../monitoring/grafana
+          context: ./monitoring/grafana
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/grafana_image:latest
@@ -59,14 +71,6 @@ jobs:
       # COMMENTED OUT: MySQL and Flagtool
       # - name: Build and push mysqlimage ...
       # - name: Build and push flagtoolimage ...
-
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/do_ssh_key
-          chmod 600 ~/.ssh/do_ssh_key
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
 
       - name: Copy deployment files to server
         run: |
