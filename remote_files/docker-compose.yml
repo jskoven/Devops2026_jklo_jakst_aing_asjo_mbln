@@ -9,6 +9,10 @@ services:
     
     environment:
       - DATABASE_URL=postgresql://minitwit_admin:12345@10.114.0.2:5432/minitwit
+
+    depends_on:
+      - grafana
+      - prometheus
  
     restart: always
 
