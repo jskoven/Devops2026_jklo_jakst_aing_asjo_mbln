@@ -31,6 +31,14 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
+      
+      - name: Copy monitoring files to server
+        run: |
+          # Sync the 'monitoring' folder contents to the server
+          scp -r -i ~/.ssh/do_ssh_key -o StrictHostKeyChecking=no monitoring/* $SSH_USER@$SSH_HOST:/monitoring/
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
 
       - name: Build and push prometheus_image
         uses: docker/build-push-action@v6
