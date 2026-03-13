@@ -9,5 +9,35 @@ services:
     
     environment:
       - DATABASE_URL=postgresql://minitwit_admin:12345@10.114.0.2:5432/minitwit
+
+    depends_on:
+      - grafana
+      - prometheus
  
     restart: always
+
+  prometheus:
+    build: 
+      dockerfile: ./Dockerfile
+      context: ../monitoring/prometheus
+    image: prometheus_image
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+
+  grafana:
+    build: 
+      dockerfile: ./Dockerfile
+      context: ../monitoring/grafana
+    image: grafana_image
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    restart: always
+
+volumes:
+  grafana-storage: {}

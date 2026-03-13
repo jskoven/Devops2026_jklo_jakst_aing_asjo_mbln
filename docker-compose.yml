@@ -1,3 +1,5 @@
+// Currently doesn't work.
+
 services:
   minitwit:
     build: .
@@ -5,8 +7,39 @@ services:
     ports:
       - "5001:5001" 
     environment:
-      - DATABASE_PATH=/data/minitwit.db
+      - DATABASE_URL=/tmp/minitwit.db
     volumes:
       - .:/app
       - /tmp:/data
+    depends_on:
+      - grafana
+      - prometheus
     command: uvicorn minitwit:app --host 0.0.0.0 --port 5001 --reload
+
+    restart: always
+
+  prometheus:
+    build: 
+      dockerfile: ./Dockerfile
+      context: ../monitoring/prometheus
+    image: prometheus_image
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+
+  grafana:
+    build: 
+      dockerfile: ./Dockerfile
+      context: ../monitoring/grafana
+    image: grafana_image
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    restart: always
+
+volumes:
+  grafana-storage: {}
