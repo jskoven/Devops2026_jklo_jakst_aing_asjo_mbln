@@ -32,26 +32,6 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
 
-      - name: Build and push prometheus_image
-        uses: docker/build-push-action@v6
-        with:
-          context: ../monitoring/prometheus
-          file: ./Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/prometheus_image:latest
-
-      - name: Build and push grafana_image
-        uses: docker/build-push-action@v6
-        with:
-          context: ../monitoring/grafana
-          file: ./Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/grafana_image:latest
-
-      # COMMENTED OUT: MySQL and Flagtool
-      # - name: Build and push mysqlimage ...
-      # - name: Build and push flagtoolimage ...
-
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
@@ -59,6 +39,38 @@ jobs:
           chmod 600 ~/.ssh/do_ssh_key
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Create monitoring folder
+        run: |
+          mkdir ./monitoring
+      
+      - name: Copy monitoring files to server
+        run: |
+          # Sync the 'monitoring' folder contents to the server
+          scp -r -i ~/.ssh/do_ssh_key -o StrictHostKeyChecking=no monitoring/* $SSH_USER@$SSH_HOST:/monitoring/
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+
+      - name: Build and push prometheus_image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./monitoring/prometheus
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/prometheus_image:latest
+
+      - name: Build and push grafana_image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./monitoring/grafana
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/grafana_image:latest
+
+      # COMMENTED OUT: MySQL and Flagtool
+      # - name: Build and push mysqlimage ...
+      # - name: Build and push flagtoolimage ...
 
       - name: Copy deployment files to server
         run: |
