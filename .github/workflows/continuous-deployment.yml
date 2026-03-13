@@ -35,6 +35,7 @@ jobs:
       - name: Build and push prometheus_image
         uses: docker/build-push-action@v6
         with:
+          context: ./monitoring/prometheus
           file: ./monitoring/prometheus/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/prometheus_image:latest
@@ -42,6 +43,7 @@ jobs:
       - name: Build and push grafana_image
         uses: docker/build-push-action@v6
         with:
+          context: ./monitoring/grafana
           file: ./monitoring/grafana/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/grafana_image:latest
