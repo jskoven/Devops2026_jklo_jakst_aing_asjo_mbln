@@ -1,6 +1,6 @@
 networks:
   minitwit-network:
-    external: true
+    external: false
     name: minitwit-network
 
 services:
