@@ -1,0 +1,20 @@
+FROM python:3.10-slim
+
+# Install Firefox and geckodriver
+RUN apt-get update && apt-get install -y \
+    firefox-esr \
+    wget \
+    && wget -q https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz \
+    && tar xzvf geckodriver-v0.32.0-linux64.tar.gz \
+    && mv geckodriver /usr/local/bin/ \
+    && rm geckodriver-v0.32.0-linux64.tar.gz \
+    && apt-get clean
+
+WORKDIR /tests
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["pytest", "-v"]
