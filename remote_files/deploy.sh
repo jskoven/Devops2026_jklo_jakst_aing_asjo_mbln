@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /minitwit
+cd /minitwit || exit
 
 docker compose pull
 
