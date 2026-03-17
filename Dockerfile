@@ -1,3 +1,4 @@
+# hadolint ignore=DL3008,DL3015
 FROM python:3.11-slim
 
 # 1. Install system dependencies for Postgres

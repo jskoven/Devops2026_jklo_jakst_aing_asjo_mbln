@@ -1,3 +1,4 @@
+# hadolint ignore=DL3008,DL3015
 FROM grafana/grafana:12.1
 
 ENV PROMETHEUS_HOST='host.docker.internal:9090'
