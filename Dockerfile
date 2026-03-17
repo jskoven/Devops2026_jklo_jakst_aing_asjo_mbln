@@ -1,8 +1,8 @@
-# hadolint ignore=DL3008,DL3015
+# hadolint ignore=DL3008
 FROM python:3.11-slim
 
 # 1. Install system dependencies for Postgres
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
