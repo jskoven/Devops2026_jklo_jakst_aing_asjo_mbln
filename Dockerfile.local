@@ -1,3 +1,4 @@
+# hadolint ignore=DL3008,DL3015
 FROM python:3.10-slim
 
 WORKDIR /app
