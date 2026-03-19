@@ -51,7 +51,7 @@ def test_latest():
     url = f'{GUI_URL}/latest'
     response = requests.get(url, headers=HEADERS)
     assert response.ok
-    assert response.json()['latest'] == 1337
+    assert response.json()["latest"] == 1337
 
 
 def test_register():
@@ -85,7 +85,7 @@ def test_create_msg():
 
 
 def test_get_latest_user_msgs():
-    username = 'a'
+    username = "a"
 
     query = {'no': 20, 'latest': 3}
     url = f'{GUI_URL}/msgs/{username}'
@@ -94,7 +94,7 @@ def test_get_latest_user_msgs():
 
     got_it_earlier = False
     for msg in response.json():
-        if msg['content'] == 'Blub!' and msg['user'] == username:
+        if msg["content"] == "Blub!" and msg["user"] == username:
             got_it_earlier = True
 
     assert got_it_earlier
@@ -113,7 +113,7 @@ def test_get_latest_msgs():
 
     got_it_earlier = False
     for msg in response.json():
-        if msg['content'] == 'Blub!' and msg['user'] == username:
+        if msg["content"] == "Blub!" and msg["user"] == username:
             got_it_earlier = True
 
     assert got_it_earlier
@@ -163,13 +163,12 @@ def test_follow_user():
                              headers=HEADERS, params=params)
     assert response.ok
 
-    data = {'follow': 'c'}
-    params = {'latest': 8}
-    response = requests.post(url, data=json.dumps(data),
-                             headers=HEADERS, params=params)
+    data = {"follow": "c"}
+    params = {"latest": 8}
+    response = requests.post(url, data=json.dumps(data), headers=HEADERS, params=params)
     assert response.ok
 
-    query = {'no': 20, 'latest': 9}
+    query = {"no": 20, "latest": 9}
     response = requests.get(url, headers=HEADERS, params=query)
     assert response.ok
 
@@ -187,17 +186,16 @@ def test_a_unfollows_b():
     url = f'{GUI_URL}/fllws/{username}'
 
     #  first send unfollow command
-    data = {'unfollow': 'b'}
-    params = {'latest': 10}
-    response = requests.post(url, data=json.dumps(data),
-                             headers=HEADERS, params=params)
+    data = {"unfollow": "b"}
+    params = {"latest": 10}
+    response = requests.post(url, data=json.dumps(data), headers=HEADERS, params=params)
     assert response.ok
 
     # then verify that b is no longer in follows list
-    query = {'no': 20, 'latest': 11}
+    query = {"no": 20, "latest": 11}
     response = requests.get(url, params=query, headers=HEADERS)
     assert response.ok
-    assert 'b' not in response.json()['follows']
+    assert "b" not in response.json()["follows"]
 
     # verify that latest was updated
     response = requests.get(f'{GUI_URL}/latest', headers=HEADERS)

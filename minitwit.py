@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    MiniTwit
-    ~~~~~~~~
+MiniTwit
+~~~~~~~~
 
-    A microblogging application written with FastAPI and sqlite3.
+A microblogging application written with FastAPI and sqlite3.
 """
 
 from contextlib import asynccontextmanager
@@ -19,24 +19,27 @@ from fastapi.responses import RedirectResponse
 from db_handler import init_db, get_session, Session, SessionDep, get_user_id
 from follower import Follower
 from message import Message
-from user import User 
-from sqlmodel import desc, or_, select 
+from user import User
+from sqlmodel import desc, or_, select
 from API_handler import router as API_handler
 
 # configuration
-DATABASE = '/tmp/minitwit.db'
+DATABASE = "/tmp/minitwit.db"
 PER_PAGE = 30
 DEBUG = True
-SECRET_KEY = 'development key'
+SECRET_KEY = "development key"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db() 
-    yield 
+    init_db()
+    yield
     print("Shutting down...")
+
 
 # create our little application :)
 app = FastAPI(lifespan=lifespan)
-# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints. 
+# This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints.
 # When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
 app.include_router(API_handler)
 
@@ -44,66 +47,59 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
+
 def format_datetime(timestamp):
     """Format a timestamp for display."""
-    return datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d @ %H:%M')
+    return datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d @ %H:%M")
+
 
 def gravatar_url(email, size=80):
     """Return the gravatar image for the given email address."""
-    return 'http://www.gravatar.com/avatar/%s?d=identicon&s=%d' % \
-        (md5(email.strip().lower().encode('utf-8')).hexdigest(), size)
+    return "http://www.gravatar.com/avatar/%s?d=identicon&s=%d" % (
+        md5(email.strip().lower().encode("utf-8")).hexdigest(),
+        size,
+    )
+
 
 # Register filters with the templates environment
-templates.env.filters['datetimeformat'] = format_datetime
-templates.env.filters['gravatar'] = gravatar_url
+templates.env.filters["datetimeformat"] = format_datetime
+templates.env.filters["gravatar"] = gravatar_url
 
-@app.get('/')
-def timeline(
-    request: Request, 
-    session: SessionDep
-):
+
+@app.get("/")
+def timeline(request: Request, session: SessionDep):
     """Shows a users timeline or if no user is logged in it will redirect to public."""
-    user_id = request.session.get('user_id')
+    user_id = request.session.get("user_id")
     if not user_id:
-        return RedirectResponse(url='/public', status_code=303)
+        return RedirectResponse(url="/public", status_code=303)
 
-    user = session.get(User,user_id) 
+    user = session.get(User, user_id)
 
     followed_ids_query = select(Follower.whom_id).where(Follower.who_id == user_id)
     followed_ids = session.exec(followed_ids_query).all()
 
     statement = (
-        select(Message, User) 
+        select(Message, User)
         .join(User, Message.author_id == User.user_id)
         .where(Message.flagged == 0)
-        .where(
-            or_(
-                Message.author_id == user_id,
-                Message.author_id.in_(followed_ids)
-            )
-        )
+        .where(or_(Message.author_id == user_id, Message.author_id.in_(followed_ids)))
         .order_by(desc(Message.pub_date))
         .limit(PER_PAGE)
     )
 
     results = session.exec(statement).all()
 
-    return templates.TemplateResponse('timeline.html', {
-        "request": request, 
-        "messages": results,
-        "user": user,
-        "endpoint": 'timeline'
-    })
+    return templates.TemplateResponse(
+        "timeline.html",
+        {"request": request, "messages": results, "user": user, "endpoint": "timeline"},
+    )
 
 
-@app.get('/public')
-def public_timeline(
-    request: Request, 
-    session: SessionDep
-):
+@app.get("/public")
+def public_timeline(request: Request, session: SessionDep):
     """Displays the latest messages of all users."""
-    user_id = request.session.get('user_id')
-    user = session.get(User,user_id) if user_id else None 
+    user_id = request.session.get("user_id")
+    user = session.get(User, user_id) if user_id else None
 
     statement = (
         select(Message, User)
@@ -115,170 +111,165 @@ def public_timeline(
 
     result = session.exec(statement).all()
 
-    return templates.TemplateResponse('timeline.html', {
-        "request": request, 
-        "messages": result,
-        "user": user,
-        "endpoint": 'public_timeline'
-    }) 
-  
-@app.post('/add_message')
+    return templates.TemplateResponse(
+        "timeline.html",
+        {
+            "request": request,
+            "messages": result,
+            "user": user,
+            "endpoint": "public_timeline",
+        },
+    )
+
+
+@app.post("/add_message")
 def add_message(
-    session:SessionDep,
+    session: SessionDep,
     text: str = Form(...),
     request: Request = None,
 ):
-    
-    user_id = request.session.get('user_id')
+
+    user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Log in to post")
 
     if text.strip():
         new_msg = Message(
-            author_id = user_id, 
-            text = text,
-            pub_date=int(time.time()),
-            flagged=0 
+            author_id=user_id, text=text, pub_date=int(time.time()), flagged=0
         )
 
     session.add(new_msg)
-    session.commit() 
+    session.commit()
 
-    return RedirectResponse(url='/', status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
-@app.api_route('/login_UI', methods=['GET', 'POST'])
+
+@app.api_route("/login_UI", methods=["GET", "POST"])
 def login_UI(
-    request: Request, 
-    session:SessionDep,
-    username: str = Form(None), 
-    password: str = Form(None)
+    request: Request,
+    session: SessionDep,
+    username: str = Form(None),
+    password: str = Form(None),
 ):
-    user_id = request.session.get('user_id')
+    user_id = request.session.get("user_id")
     if user_id:
-        return RedirectResponse(url='/', status_code=303)
+        return RedirectResponse(url="/", status_code=303)
     error = None
-    if request.method == 'POST':
-        statement = (select(User) 
-                .where(User.username == username))
+    if request.method == "POST":
+        statement = select(User).where(User.username == username)
         user = session.exec(statement).first()
         if user is None:
-            error = 'Invalid username'
+            error = "Invalid username"
         elif not check_password_hash(user.pw_hash, password):
-            error = 'Invalid password'
+            error = "Invalid password"
         else:
-            request.session['user_id'] = user.user_id
-            return RedirectResponse(url='/', status_code=303)
+            request.session["user_id"] = user.user_id
+            return RedirectResponse(url="/", status_code=303)
 
-    return templates.TemplateResponse('login.html', {
-        "request": request, 
-        "error": error,
-        "username": username,
-        "user": None
-    })
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": error, "username": username, "user": None},
+    )
 
-@app.api_route('/register_UI', methods=['GET', 'POST'])
+
+@app.api_route("/register_UI", methods=["GET", "POST"])
 def register_UI(
     request: Request,
     session: SessionDep,
     username: str = Form(None),
     email: str = Form(None),
     password: str = Form(None),
-    password2: str = Form(None)
+    password2: str = Form(None),
 ):
-    user_id = request.session.get('user_id')
+    user_id = request.session.get("user_id")
     if user_id:
-        return RedirectResponse(url='/', status_code=303)
-        
+        return RedirectResponse(url="/", status_code=303)
+
     error = None
-    if request.method == 'POST':
+    if request.method == "POST":
         if not username:
-            error = 'You have to enter a username'
-        elif not email or '@' not in email:
-            error = 'You have to enter a valid email address'
+            error = "You have to enter a username"
+        elif not email or "@" not in email:
+            error = "You have to enter a valid email address"
         elif not password:
-            error = 'You have to enter a password'
+            error = "You have to enter a password"
         elif password != password2:
-            error = 'The two passwords do not match'
+            error = "The two passwords do not match"
         elif get_user_id(username, session) is not None:
-            error = 'The username is already taken'
+            error = "The username is already taken"
         else:
             new_usr = User(
-                username = username,
-                email = email, 
-                pw_hash= generate_password_hash(password) 
+                username=username, email=email, pw_hash=generate_password_hash(password)
             )
-            session.add(new_usr) 
+            session.add(new_usr)
             session.commit()
 
-            return RedirectResponse(url='/login_UI', status_code=303)
+            return RedirectResponse(url="/login_UI", status_code=303)
 
-    return templates.TemplateResponse('register.html', {
-        "request": request, 
-        "error": error,
-        "username": username,
-        "email": email,
-        "user": None
-    })
+    return templates.TemplateResponse(
+        "register.html",
+        {
+            "request": request,
+            "error": error,
+            "username": username,
+            "email": email,
+            "user": None,
+        },
+    )
 
-@app.get('/logout_UI')
+
+@app.get("/logout_UI")
 def logout_UI(request: Request):
-    request.session.pop('user_id', None)
-    return RedirectResponse(url='/public', status_code=303)
+    request.session.pop("user_id", None)
+    return RedirectResponse(url="/public", status_code=303)
 
-@app.get('/{username}')
-def user_timeline(
-    username: str,
-    request: Request, 
-    session: SessionDep 
-):
+
+@app.get("/{username}")
+def user_timeline(username: str, request: Request, session: SessionDep):
     """Displays a user's tweets."""
-    profile_user = session.exec(
-        select(User).where(User.username == username)
-    ).first()
-    
+    profile_user = session.exec(select(User).where(User.username == username)).first()
+
     if profile_user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user_id = request.session.get('user_id')
-    user = session.get(User,user_id) if user_id else None 
-    
-    followed_res = False 
+    user_id = request.session.get("user_id")
+    user = session.get(User, user_id) if user_id else None
+
+    followed_res = False
     if user_id:
 
-        followed = (
-        select(Follower)
-        .where(Follower.who_id == user_id,
-               Follower.whom_id == profile_user.user_id))
-        
-        followed_res = session.exec(followed).first() is not None 
+        followed = select(Follower).where(
+            Follower.who_id == user_id, Follower.whom_id == profile_user.user_id
+        )
+
+        followed_res = session.exec(followed).first() is not None
 
     msg = (
-            select(Message,User)
-            .join(User,Message.author_id == User.user_id)
-            .where(User.user_id == profile_user.user_id) 
-            .order_by(desc(Message.pub_date))
-            .limit(PER_PAGE))
+        select(Message, User)
+        .join(User, Message.author_id == User.user_id)
+        .where(User.user_id == profile_user.user_id)
+        .order_by(desc(Message.pub_date))
+        .limit(PER_PAGE)
+    )
 
-    msg_res = session.exec(msg).all() 
-    
+    msg_res = session.exec(msg).all()
 
-    return templates.TemplateResponse('timeline.html', {
-        "request": request,
-        "messages": msg_res,
-        "followed": followed_res,
-        "profile_user": profile_user,
-        "user": user,
-        "endpoint": 'user_timeline'
-    })
+    return templates.TemplateResponse(
+        "timeline.html",
+        {
+            "request": request,
+            "messages": msg_res,
+            "followed": followed_res,
+            "profile_user": profile_user,
+            "user": user,
+            "endpoint": "user_timeline",
+        },
+    )
 
-@app.get('/{username}/follow')
-def follow_user(
-    username: str, 
-    request: Request, 
-   session: SessionDep
 
-):
-    user_id = request.session.get('user_id')
+@app.get("/{username}/follow")
+def follow_user(username: str, request: Request, session: SessionDep):
+    user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Please log in first")
 
@@ -286,22 +277,17 @@ def follow_user(
 
     if whom_id is None:
         raise HTTPException(status_code=404, detail="User not found")
-    
 
-    new_followr = Follower(who_id = user_id, 
-                           whom_id = whom_id)
+    new_followr = Follower(who_id=user_id, whom_id=whom_id)
 
-    session.add(new_followr) 
+    session.add(new_followr)
     session.commit()
     return RedirectResponse(url=f"/{username}", status_code=303)
 
-@app.get('/{username}/unfollow')
-def unfollow_user(
-    username: str, 
-    request: Request, 
-    session : SessionDep
-):
-    user_id = request.session.get('user_id')
+
+@app.get("/{username}/unfollow")
+def unfollow_user(username: str, request: Request, session: SessionDep):
+    user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Log in to unfollow")
 
@@ -309,18 +295,19 @@ def unfollow_user(
     if whom_id is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    unfollow = (select(Follower)
-                .where(Follower.who_id==user_id,
-                       Follower.whom_id == whom_id))
-    
+    unfollow = select(Follower).where(
+        Follower.who_id == user_id, Follower.whom_id == whom_id
+    )
+
     record_to_unfollow = session.exec(unfollow).first()
     if record_to_unfollow:
-        session.delete(record_to_unfollow) 
+        session.delete(record_to_unfollow)
         session.commit()
-    
+
     return RedirectResponse(url=f"/{username}", status_code=303)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=5001)
