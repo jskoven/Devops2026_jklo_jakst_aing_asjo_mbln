@@ -1,3 +1,6 @@
+# Relevant links:
+SonarQube: https://sonarcloud.io/project/overview?id=jskoven_Devops2026_jklo_jakst_aing_asjo_mbln
+Codeacy: https://app.codacy.com/organizations/gh/jskoven/dashboard
 # ITU-MiniTwit Deployment
 
 ### 1. Prerequisites
