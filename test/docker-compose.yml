@@ -26,7 +26,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://minitwit:minitwit@db:5432/minitwit
 
-  ui_test:
+  test:
     build:
       context: ..
       dockerfile: test/Dockerfile.test
