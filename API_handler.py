@@ -155,8 +155,8 @@ async def follow_unfollow_user(username: str, request: Request, session: Session
             session.commit()
         else:
             print(
-                f"ERROR: {user_id} attempted to follow {whom_id} - {whom_id} not in database!"
-            )
+                f"ERROR: {user_id} (found) attempted to follow {data['follow']} (NOT FOUND)"
+         )
             raise HTTPException(status_code=404, detail="User not found")
     elif "unfollow" in data:
         whom_id = get_user_id(data["unfollow"], session)
@@ -170,7 +170,7 @@ async def follow_unfollow_user(username: str, request: Request, session: Session
                 session.commit()
         else:
             print(
-                f"ERROR: {user_id} attempted to unfollow {whom_id} - {whom_id} not in database!"
+                f"ERROR: {user_id} (found) attempted to unfollow {data['unfollow']} (NOT FOUND)"
             )
             raise HTTPException(status_code=404, detail="User not found")
 
