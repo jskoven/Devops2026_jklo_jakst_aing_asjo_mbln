@@ -156,7 +156,7 @@ async def follow_unfollow_user(username: str, request: Request, session: Session
         else:
             print(
                 f"ERROR: {user_id} (found) attempted to follow {data['follow']} (NOT FOUND)"
-         )
+            )
             raise HTTPException(status_code=404, detail="User not found")
     elif "unfollow" in data:
         whom_id = get_user_id(data["unfollow"], session)
