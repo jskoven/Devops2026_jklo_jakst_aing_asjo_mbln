@@ -12,9 +12,9 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /tests
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY ./test/requirements_test.txt .
+RUN pip install --no-cache-dir -r requirements_test.txt
 
 COPY . .
 
-CMD ["pytest", "-v"]
+CMD ["pytest", "./test/mintwit_ui_test.py", "-v"]

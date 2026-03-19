@@ -1,0 +1,8 @@
+psycopg2-binary==2.9.9
+selenium == 4.41.0
+SQLAlchemy==2.0.48
+sqlmodel==0.0.37
+fastapi==0.128.5
+annotated-doc==0.0.4
+annotated-types==0.7.0
+pytest==9.0.2

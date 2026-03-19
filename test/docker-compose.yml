@@ -32,9 +32,6 @@ services:
       dockerfile: test/Dockerfile.test
     depends_on:
       - minitwit
-    environment:
-      - APP_URL=http://minitwit:5001
-      - DATABASE_URL=postgresql://minitwit:minitwit@db:5432/minitwit
 
 volumes:
   minitwit_pgdata:
