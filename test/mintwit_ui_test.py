@@ -106,8 +106,8 @@ def test_register_user_via_gui_and_check_db_entry(db_session:Session):
     assert _get_user_by_name(db_session, "TestUser") is None
 
     with _get_browser() as driver:
-        flashes = _register_user_via_gui(driver,"TestUser", "test@example.com", "secure123")
-        assert flashes[0].text == "You were successfully registered and can login now"
+        login_ui = _register_user_via_gui(driver,"TestUser", "test@example.com", "secure123")
+        assert login_ui == "http://minitwit:5001/login_UI"
 
     assert _get_user_by_name(db_session, "TestUser").username == "TestUser"
 
