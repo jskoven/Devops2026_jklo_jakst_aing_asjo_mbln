@@ -38,24 +38,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from user import User
-
-TEST_DB_URL = "postgresql://minitwit:minitwit@db:5432/minitwit"
-engine = create_engine(TEST_DB_URL)
-
-@pytest.fixture(scope="session")
-def db_engine():
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
-
-@pytest.fixture
-def db_session():
-    with Session(engine) as session:
-        yield session
-
-SessionDep = Annotated[Session, Depends(db_session)]
-
-GUI_URL = "http://minitwit:5001"
+from conftest import GUI_URL,TEST_DB_URL
 
 def _get_browser():
     options = Options()
