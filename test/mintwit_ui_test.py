@@ -12,9 +12,11 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from user import User
-from conftest import GUI_URL,TEST_DB_URL
+from conftest import GUI_URL, TEST_DB_URL
+
 
 def _get_browser():
     options = Options()
@@ -22,7 +24,7 @@ def _get_browser():
     return webdriver.Firefox(service=Service(which("geckodriver")), options=options)
 
 
-def _register_user_via_gui(driver,username, email, password):
+def _register_user_via_gui(driver, username, email, password):
     driver.get(f"{GUI_URL}/register_UI")
 
     wait = WebDriverWait(driver, 5)
@@ -39,33 +41,37 @@ def _register_user_via_gui(driver,username, email, password):
     return driver.current_url
 
 
-def _get_user_by_name(session:Session, username):
+def _get_user_by_name(session: Session, username):
     return session.exec(select(User).where(User.username == username)).first()
 
 
-def _delete_user_by_name(db_session:Session, username):
+def _delete_user_by_name(db_session: Session, username):
     user = _get_user_by_name(db_session, username)
     if user:
         db_session.delete(user)
         db_session.commit()
 
 
-def test_register_user_via_gui(db_session:Session):
+def test_register_user_via_gui(db_session: Session):
     """UI test — only checks what the user sees in the browser."""
     with _get_browser() as driver:
-        login_ui = _register_user_via_gui(driver, "TestUser", "test@example.com", "secure123")
+        login_ui = _register_user_via_gui(
+            driver, "TestUser", "test@example.com", "secure123"
+        )
         assert login_ui == "http://minitwit:5001/login_UI"
 
     # cleanup — ensures test is idempotent
     _delete_user_by_name(db_session, "TestUser")
 
 
-def test_register_user_via_gui_and_check_db_entry(db_session:Session):
+def test_register_user_via_gui_and_check_db_entry(db_session: Session):
     """End-to-end test — verifies the UI action actually persisted to the DB."""
     assert _get_user_by_name(db_session, "TestUser") is None
 
     with _get_browser() as driver:
-        login_ui = _register_user_via_gui(driver,"TestUser", "test@example.com", "secure123")
+        login_ui = _register_user_via_gui(
+            driver, "TestUser", "test@example.com", "secure123"
+        )
         assert login_ui == "http://minitwit:5001/login_UI"
 
     assert _get_user_by_name(db_session, "TestUser").username == "TestUser"
