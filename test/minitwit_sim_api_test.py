@@ -1,7 +1,6 @@
 import os
 import json
 import base64
-import sqlite3
 import requests
 from pathlib import Path
 from contextlib import closing
@@ -15,8 +14,7 @@ from sqlmodel import SQLModel, Session, create_engine
 import pytest
 from conftest import GUI_URL
 
-# GUI_URL = os.getenv('TEST_URL', 'http://localhost:5001')
-# DATABASE = "/tmp/minitwit_test.db"
+MSG_CONTENT = 'Blub!'
 USERNAME = 'simulator'
 PWD = 'super_safe!'
 CREDENTIALS = ':'.join([USERNAME, PWD]).encode('ascii')
@@ -24,20 +22,6 @@ ENCODED_CREDENTIALS = base64.b64encode(CREDENTIALS).decode()
 HEADERS = {'Connection': 'close',
            'Content-Type': 'application/json',
            f'Authorization': f'Basic {ENCODED_CREDENTIALS}'}
-# test_db_url = f"sqlite:///{DATABASE}"
-# test_engine = create_engine(test_db_url, connect_args={"check_same_thread": False})
-
-# def init_db():
-#     """Creates the database tables."""
-#     SQLModel.metadata.create_all(test_engine)
-
-# @pytest.fixture(scope="module", autouse=True)
-# def cleanup_database():
-#     yield
-#     if os.path.exists(DATABASE): 
-#         os.remove(DATABASE)
-
-
 def test_latest():
     # post something to update LATEST
     url = f"{GUI_URL}/register"
@@ -72,7 +56,7 @@ def test_register():
 
 def test_create_msg():
     username = 'a'
-    data = {'content': 'Blub!'}
+    data = {'content': MSG_CONTENT}
     url = f'{GUI_URL}/msgs/{username}'
     params = {'latest': 2}
     response = requests.post(url, data=json.dumps(data),
@@ -94,7 +78,7 @@ def test_get_latest_user_msgs():
 
     got_it_earlier = False
     for msg in response.json():
-        if msg["content"] == "Blub!" and msg["user"] == username:
+        if msg["content"] == MSG_CONTENT and msg["user"] == username:
             got_it_earlier = True
 
     assert got_it_earlier
@@ -113,7 +97,7 @@ def test_get_latest_msgs():
 
     got_it_earlier = False
     for msg in response.json():
-        if msg["content"] == "Blub!" and msg["user"] == username:
+        if msg["content"] == MSG_CONTENT and msg["user"] == username:
             got_it_earlier = True
 
     assert got_it_earlier
