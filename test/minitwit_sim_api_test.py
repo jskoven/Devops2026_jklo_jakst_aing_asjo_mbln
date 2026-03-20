@@ -14,10 +14,10 @@ from message import Message
 from sqlmodel import SQLModel, Session, create_engine
 from conftest import GUI_URL
 
-MSG_CONTENT = 'Blub!'
-USERNAME = 'simulator'
-PWD = 'super_safe!'
-CREDENTIALS = ':'.join([USERNAME, PWD]).encode('ascii')
+MSG_CONTENT = "Blub!"
+USERNAME = "simulator"
+PWD = "super_safe!"
+CREDENTIALS = ":".join([USERNAME, PWD]).encode("ascii")
 ENCODED_CREDENTIALS = base64.b64encode(CREDENTIALS).decode()
 HEADERS = {
     "Connection": "close",
@@ -71,12 +71,11 @@ def test_register():
 
 
 def test_create_msg():
-    username = 'a'
-    data = {'content': MSG_CONTENT}
-    url = f'{GUI_URL}/msgs/{username}'
-    params = {'latest': 2}
-    response = requests.post(url, data=json.dumps(data),
-                             headers=HEADERS, params=params)
+    username = "a"
+    data = {"content": MSG_CONTENT}
+    url = f"{GUI_URL}/msgs/{username}"
+    params = {"latest": 2}
+    response = requests.post(url, data=json.dumps(data), headers=HEADERS, params=params)
     assert response.ok
 
     # verify that latest was updated
