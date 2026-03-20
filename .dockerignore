@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+.vscode/
+.idea/
+.vagrant/
+.git/
+.github/
+**/Dockerfile*
+**/docker-compose*.yml
+remote_files/ 

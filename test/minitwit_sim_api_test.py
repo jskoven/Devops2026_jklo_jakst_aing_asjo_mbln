@@ -11,7 +11,6 @@ from follower import Follower
 from user import User
 from message import Message
 from sqlmodel import SQLModel, Session, create_engine
-import pytest
 from conftest import GUI_URL
 
 MSG_CONTENT = 'Blub!'
