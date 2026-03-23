@@ -39,6 +39,30 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
     restart: always
+  
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - minitwit-network
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail/config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - minitwit-network
+
+
 
 volumes:
   grafana-storage: {}
+  elasticsearch-data: {}

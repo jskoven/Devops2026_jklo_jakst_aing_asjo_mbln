@@ -73,6 +73,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3 # Used to create both mac and windows images
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -83,6 +86,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
 
       - name: Build and push prometheus_image
@@ -91,6 +95,7 @@ jobs:
           context: ./monitoring/prometheus
           file: ./monitoring/prometheus/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ secrets.DOCKER_USERNAME }}/prometheus_image:latest
 
       - name: Build and push grafana_image
@@ -99,6 +104,7 @@ jobs:
           context: ./monitoring/grafana
           file: ./monitoring/grafana/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ secrets.DOCKER_USERNAME }}/grafana_image:latest
 
       # COMMENTED OUT: MySQL and Flagtool
