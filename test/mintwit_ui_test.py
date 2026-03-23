@@ -1,8 +1,5 @@
 from shutil import which
-from typing import Annotated
-from fastapi import Depends
-import pytest
-from sqlmodel import SQLModel, Session, create_engine, select, text
+from sqlmodel import Session, select
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -12,10 +9,9 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 import sys
 import os
-
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from user import User
-from conftest import GUI_URL, TEST_DB_URL
+from conftest import GUI_URL
 
 
 def _get_browser():
