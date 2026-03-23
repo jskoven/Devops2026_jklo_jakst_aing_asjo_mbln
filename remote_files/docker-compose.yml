@@ -40,44 +40,24 @@ services:
       - grafana-storage:/var/lib/grafana
     restart: always
   
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - xpack.security.enabled=true
-      - ELASTIC_PASSWORD=sesame0uvr3toi
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
     ports:
-      - "9200:9200"
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
     networks:
       - minitwit-network
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:7.17.10
-    container_name: logstash
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
     volumes:
-      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail/config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
     networks:
       - minitwit-network
-    depends_on:
-      - elasticsearch
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.10
-    container_name: kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ElASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=sesame0uvr3toi
-    networks:
-      - minitwit-network
-    depends_on:
-      - elasticsearch
 
 
 
