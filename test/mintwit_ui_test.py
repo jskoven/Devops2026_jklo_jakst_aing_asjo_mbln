@@ -9,6 +9,7 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 import sys
 import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from user import User
 from conftest import GUI_URL

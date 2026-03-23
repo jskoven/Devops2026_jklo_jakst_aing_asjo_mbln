@@ -11,12 +11,12 @@ import time
 from hashlib import md5
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
-from fastapi import FastAPI, Request, Form,HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from db_handler import init_db,SessionDep, get_user_id
+from db_handler import init_db, SessionDep, get_user_id
 from follower import Follower
 from message import Message
 from user import User
@@ -47,11 +47,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 templates = Jinja2Templates(directory="templates")
 
-#Helper function to use flash messages with fastAPI setup
+
+# Helper function to use flash messages with fastAPI setup
 def flash(request: Request, message: str = "message"):
-    request.session.setdefault("_flashes", []).append(
-        {"message": message}
-    )
+    request.session.setdefault("_flashes", []).append({"message": message})
+
 
 def get_flashed_messages(request: Request):
     return request.session.pop("_flashes", [])
@@ -101,7 +101,13 @@ def timeline(request: Request, session: SessionDep):
 
     return templates.TemplateResponse(
         "timeline.html",
-        {"request": request, "messages": results, "flashes": flash_msg, "user": user, "endpoint": "timeline"},
+        {
+            "request": request,
+            "messages": results,
+            "flashes": flash_msg,
+            "user": user,
+            "endpoint": "timeline",
+        },
     )
 
 
@@ -152,7 +158,7 @@ def add_message(
 
     session.add(new_msg)
     session.commit()
-    flash(request, 'Your message was recorded')
+    flash(request, "Your message was recorded")
 
     return RedirectResponse(url="/", status_code=303)
 
@@ -176,13 +182,19 @@ def login_UI(
         elif not check_password_hash(user.pw_hash, password):
             error = "Invalid password"
         else:
-            flash(request,"You were logged in")
+            flash(request, "You were logged in")
             request.session["user_id"] = user.user_id
             return RedirectResponse(url="/", status_code=303)
     flash_msgs = get_flashed_messages(request)
     return templates.TemplateResponse(
         "login.html",
-        {"request": request, "flashes": flash_msgs, "error": error, "username": username, "user": None},
+        {
+            "request": request,
+            "flashes": flash_msgs,
+            "error": error,
+            "username": username,
+            "user": None,
+        },
     )
 
 
@@ -218,7 +230,7 @@ def register_UI(
             session.add(new_usr)
             session.commit()
 
-            flash(request, "You were successfully registered and can login now")  
+            flash(request, "You were successfully registered and can login now")
             return RedirectResponse(url="/login_UI", status_code=303)
 
     return templates.TemplateResponse(
@@ -235,7 +247,7 @@ def register_UI(
 
 @app.get("/logout_UI")
 def logout_UI(request: Request):
-    flash(request, 'You were logged out')
+    flash(request, "You were logged out")
     request.session.pop("user_id", None)
     return RedirectResponse(url="/public", status_code=303)
 
@@ -323,7 +335,7 @@ def unfollow_user(username: str, request: Request, session: SessionDep):
     if record_to_unfollow:
         session.delete(record_to_unfollow)
         session.commit()
-        
+
     flash(request, 'You are no longer following "%s"' % username)
 
     return RedirectResponse(url=f"/{username}", status_code=303)

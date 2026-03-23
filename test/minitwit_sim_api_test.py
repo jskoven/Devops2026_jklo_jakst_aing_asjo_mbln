@@ -6,6 +6,7 @@ from pathlib import Path
 from contextlib import closing
 import os
 import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from follower import Follower
 from user import User
@@ -22,6 +23,7 @@ HEADERS = {
     "Content-Type": "application/json",
     f"Authorization": f"Basic {ENCODED_CREDENTIALS}",
 }
+
 
 def test_latest():
     # post something to update LATEST

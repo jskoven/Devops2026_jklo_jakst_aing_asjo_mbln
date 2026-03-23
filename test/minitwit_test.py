@@ -8,15 +8,18 @@ Tests the MiniTwit application.
 :copyright: (c) 2010 by Armin Ronacher.
 :license: BSD, see LICENSE for more details.
 """
+
 import unittest
 import requests
-import os 
-import sys 
+import os
+import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from follower import Follower
 from user import User
 from message import Message
 from conftest import GUI_URL
+
 
 class MiniTwitTestCase(unittest.TestCase):
 
@@ -26,44 +29,44 @@ class MiniTwitTestCase(unittest.TestCase):
     def tearDown(self):
         self.session.close()
 
-    def register(self,username, password, password2=None, email=None):
+    def register(self, username, password, password2=None, email=None):
         """Helper function to register a user"""
         if password2 is None:
             password2 = password
         if email is None:
             email = username + "@example.com"
-        
-        return self.session.post(
-                f"{GUI_URL}/register_UI",
-            data={
-                    "username": username,
-                    "password": password,
-                    "password2": password2,
-                    "email": email,
-                },
-                allow_redirects=True,
-        )
 
-    def login(self,username, password):
-        """Helper function to login"""
         return self.session.post(
-           f"{GUI_URL}/login_UI",
-        data={"username": username, "password": password},
+            f"{GUI_URL}/register_UI",
+            data={
+                "username": username,
+                "password": password,
+                "password2": password2,
+                "email": email,
+            },
             allow_redirects=True,
         )
 
-    def register_and_login(self,username, password):
+    def login(self, username, password):
+        """Helper function to login"""
+        return self.session.post(
+            f"{GUI_URL}/login_UI",
+            data={"username": username, "password": password},
+            allow_redirects=True,
+        )
+
+    def register_and_login(self, username, password):
         """Registers and logs in in one go"""
         self.register(username, password)
-        return self.login(username,password) 
+        return self.login(username, password)
 
     def logout(self):
         """Helper function to logout"""
         return self.session.get(f"{GUI_URL}/logout_UI", allow_redirects=True)
 
-    def add_message(self,text):
+    def add_message(self, text):
         """Records a message"""
-        rv = self.session.post(f"{GUI_URL}/add_message",data={"text": text})
+        rv = self.session.post(f"{GUI_URL}/add_message", data={"text": text})
         if text:
             assert "Your message was recorded" in rv.text
         return rv
@@ -87,7 +90,7 @@ class MiniTwitTestCase(unittest.TestCase):
 
     def test_login_logout(self):
         """Make sure logging in and logging out works"""
-        #register first since each fixture is indpendent
+        # register first since each fixture is indpendent
         rv = self.register("user2", "default")
         assert "You were successfully registered and can login now" in rv.text
         rv = self.login("user2", "default")
@@ -104,7 +107,7 @@ class MiniTwitTestCase(unittest.TestCase):
         self.register_and_login("foo", "default")
         self.add_message("test message 1")
         self.add_message("<test message 2>")
-        rv =  self.session.get(f"{GUI_URL}/")
+        rv = self.session.get(f"{GUI_URL}/")
         assert "test message 1" in rv.text
         assert "&lt;test message 2&gt;" in rv.text
 
