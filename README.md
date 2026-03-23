@@ -3,6 +3,11 @@ SonarQube: https://sonarcloud.io/project/overview?id=jskoven_Devops2026_jklo_jak
 
 Codeacy: https://app.codacy.com/organizations/gh/jskoven/dashboard
 
+# Monitoring and logging:
+Both monitoring and logging is handled on the grafana site. Logging is done via grafana's "Loki". The grafana site can be accessed on port 3000:
+
+http://161.35.68.148:3000
+
 # ITU-MiniTwit Deployment
 
 ### 1. Prerequisites
