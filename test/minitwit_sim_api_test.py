@@ -11,7 +11,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from follower import Follower
 from user import User
 from message import Message
-from sqlmodel import SQLModel, Session, create_engine
 from conftest import GUI_URL
 
 MSG_CONTENT = "Blub!"
@@ -24,18 +23,6 @@ HEADERS = {
     "Content-Type": "application/json",
     f"Authorization": f"Basic {ENCODED_CREDENTIALS}",
 }
-# test_db_url = f"sqlite:///{DATABASE}"
-# test_engine = create_engine(test_db_url, connect_args={"check_same_thread": False})
-
-# def init_db():
-#     """Creates the database tables."""
-#     SQLModel.metadata.create_all(test_engine)
-
-# @pytest.fixture(scope="module", autouse=True)
-# def cleanup_database():
-#     yield
-#     if os.path.exists(DATABASE):
-#         os.remove(DATABASE)
 
 
 def test_latest():

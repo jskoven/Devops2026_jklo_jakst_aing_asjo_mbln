@@ -18,8 +18,8 @@
   {# This section handles the messages if you decide to pass 'flashes' from Python later #}
   {% if flashes %}
     <ul class="flashes">
-    {% for message in flashes %}
-      <li>{{ message }}</li>
+    {% for msg in flashes %}
+      <li>{{ msg.message }}</li>
     {% endfor %}
     </ul>
   {% endif %}
