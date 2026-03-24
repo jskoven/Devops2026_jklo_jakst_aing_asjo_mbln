@@ -108,8 +108,12 @@ def _follow_user_via_gui(driver, username):
     follow_button = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Follow user")))
     follow_button.click()
 
-
-
+def _unfollow_user_via_gui(driver, username):
+    wait = WebDriverWait(driver, 5) 
+    driver.get(f"{GUI_URL}/{username}")
+    
+    unfollow_button = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Unfollow user")))
+    unfollow_button.click()
 
 
 def test_register_user_via_gui(db_session: Session):
@@ -190,7 +194,7 @@ def test_post_message_via_gui_and_check_db_entry(db_session: Session):
     _delete_user_by_name(db_session, test_username)
 
 
-def test_follow_user_via_gui(db_session: Session):
+def test_follow_and_unfollow_user_via_gui(db_session: Session):
     # making two users
     follower_name = "FollowerUser"
     following_name = "FollowingUser"
@@ -219,10 +223,17 @@ def test_follow_user_via_gui(db_session: Session):
             
             # varify the button text changed to "Unfollow user"
             assert "Unfollow user" in driver.page_source
+
+            # now unfollow and varify the button text changes back to "Follow user"
+            _unfollow_user_via_gui(driver, following_name)
+            wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Follow user")))
+            assert "Follow user" in driver.page_source
             
     finally:
         _delete_user_by_name(db_session, follower_name)
         _delete_user_by_name(db_session, following_name)
+
+
 
 
 def test_publicTimeline_shows_messages_of_all_users(db_session: Session):
@@ -267,6 +278,7 @@ def test_publicTimeline_shows_messages_of_all_users(db_session: Session):
     finally:
         _delete_user_by_name(db_session, u1_name)
         _delete_user_by_name(db_session, u2_name)
+
 
 def test_userTimeline_shows_only_messages_of_followed_users(db_session: Session):
     follower_name = "followerUser"
@@ -313,3 +325,58 @@ def test_userTimeline_shows_only_messages_of_followed_users(db_session: Session)
     finally:
         _delete_user_by_name(db_session, follower_name)
         _delete_user_by_name(db_session, following_name)
+
+
+def test_users_Timeline_only_shows_users_messages(db_session: Session):
+    user1_name = "user1"
+    user2_name = "user2"
+
+    password = "secure123"
+    pw_hash = generate_password_hash(password)
+
+    _delete_user_by_name(db_session, user1_name)
+    _delete_user_by_name(db_session, user2_name)
+
+    user1_obj = User(username=user1_name, email="user1@example.com", pw_hash=pw_hash)
+    user2_obj = User(username=user2_name, email="user2@example.com", pw_hash=pw_hash)
+
+    db_session.add(user1_obj)
+    db_session.add(user2_obj)
+    db_session.commit()
+
+    test_message_user1 = "Message from user1."
+    test_message_user2 = "Message from user2."
+
+    message1 = Message(
+        text=test_message_user1, 
+        author_id=user1_obj.user_id,
+        pub_date=int(datetime.now().timestamp()), 
+        flagged=0
+    )
+    message2 = Message(
+        text=test_message_user2, 
+        author_id=user2_obj.user_id,
+        pub_date=int(datetime.now().timestamp()), 
+        flagged=0
+    )
+    db_session.add(message1)
+    db_session.add(message2)
+    db_session.commit()
+
+    try:
+        with _get_browser() as driver:
+            _login_user_via_gui(driver, user1_name, password)
+
+            driver.get(f"{GUI_URL}/{user1_name}")
+            
+            # Verify only user1's message is visible
+            assert test_message_user1 in driver.page_source
+            assert test_message_user2 not in driver.page_source
+
+            driver.get(f"{GUI_URL}/{user2_name}")
+            assert test_message_user2 in driver.page_source
+            assert test_message_user1 not in driver.page_source 
+            
+    finally:
+        _delete_user_by_name(db_session, user1_name)
+        _delete_user_by_name(db_session, user2_name)
