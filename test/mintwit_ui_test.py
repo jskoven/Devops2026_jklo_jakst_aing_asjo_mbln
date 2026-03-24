@@ -162,6 +162,40 @@ def test_login_user_via_gui(db_session: Session):
         _delete_user_by_name(db_session, test_username)
 
 
+def test_login_user_via_gui_with_wrong_password(db_session: Session):
+    test_username = "LoginTester"
+    test_password = "secure123"
+    wrong_password = "wrongpass"
+
+    #clean up
+    _delete_user_by_name(db_session, test_username)
+
+    new_user = User(
+        username=test_username, 
+        email="login@test.com", 
+        pw_hash=generate_password_hash(test_password)
+    )
+    db_session.add(new_user)
+    db_session.commit()
+
+    with _get_browser() as driver:
+        driver.get(f"{GUI_URL}/login_UI")
+        
+        # log in without helper with wrong password
+        wait = WebDriverWait(driver, 5)
+        wait.until(EC.presence_of_element_located((By.NAME, "username")))
+        
+        driver.find_element(By.NAME, "username").send_keys(test_username)
+        driver.find_element(By.NAME, "password").send_keys(wrong_password)
+        driver.find_element(By.NAME, "password").send_keys(Keys.RETURN)
+
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "error")))
+        
+        assert "Invalid password" in driver.page_source
+        
+        _delete_user_by_name(db_session, test_username)
+
+
 def test_post_message_via_gui_and_check_db_entry(db_session: Session):
     test_username = "PostTester"
     test_password = "secure123"
@@ -182,7 +216,6 @@ def test_post_message_via_gui_and_check_db_entry(db_session: Session):
         _login_user_via_gui(driver, test_username, test_password)
         _post_message_via_gui(driver, test_message)  # <--- Using the helper now!
         
-        #varify the message appears in the ui
         assert test_message in driver.page_source
 
     # verify the message was persisted in the database
