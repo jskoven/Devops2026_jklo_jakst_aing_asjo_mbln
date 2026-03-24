@@ -268,3 +268,48 @@ def test_publicTimeline_shows_messages_of_all_users(db_session: Session):
         _delete_user_by_name(db_session, u1_name)
         _delete_user_by_name(db_session, u2_name)
 
+def test_userTimeline_shows_only_messages_of_followed_users(db_session: Session):
+    follower_name = "followerUser"
+    following_name = "followingUser"
+    password = "secure123"
+    pw_hash = generate_password_hash(password)
+
+    _delete_user_by_name(db_session, follower_name)
+    _delete_user_by_name(db_session, following_name)
+
+    follower_obj = User(username=follower_name, email="follower@example.com", pw_hash=pw_hash)
+    following_obj = User(username=following_name, email="following@example.com", pw_hash=pw_hash)
+
+    db_session.add(follower_obj)
+    db_session.add(following_obj)
+    db_session.commit()
+
+    test_message = "This is a message from the followed user."
+    message = Message(
+        text=test_message, 
+        author_id=following_obj.user_id,
+        pub_date=int(datetime.now().timestamp()), 
+        flagged=0
+    )
+    db_session.add(message)
+    db_session.commit()
+
+    try:
+        with _get_browser() as driver:
+            _login_user_via_gui(driver, follower_name, password)
+
+            # Initially, the message from the followed user should not be visible
+            driver.get(f"{GUI_URL}/")
+            assert test_message not in driver.page_source
+            assert following_name not in driver.page_source
+
+            _follow_user_via_gui(driver, following_name)
+
+            driver.get(f"{GUI_URL}/")
+            
+            # Verify the message from the followed user is visible
+            assert test_message in driver.page_source
+            assert following_name in driver.page_source
+    finally:
+        _delete_user_by_name(db_session, follower_name)
+        _delete_user_by_name(db_session, following_name)
