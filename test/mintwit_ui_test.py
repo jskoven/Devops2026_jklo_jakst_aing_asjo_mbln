@@ -303,8 +303,7 @@ def test_publicTimeline_shows_messages_of_all_users(db_session: Session):
     
             driver.get(f"{GUI_URL}/public")
             
-            # Verify the message from User 2 is visible
-         
+            # verify the message from User 2 is visible
             assert test_message in driver.page_source
             assert u2_name in driver.page_source
 
@@ -343,7 +342,7 @@ def test_userTimeline_shows_only_messages_of_followed_users(db_session: Session)
         with _get_browser() as driver:
             _login_user_via_gui(driver, follower_name, password)
 
-            # Initially, the message from the followed user should not be visible
+            # initially, the message from the followed user should not be visible
             driver.get(f"{GUI_URL}/")
             assert test_message not in driver.page_source
             assert following_name not in driver.page_source
@@ -352,7 +351,7 @@ def test_userTimeline_shows_only_messages_of_followed_users(db_session: Session)
 
             driver.get(f"{GUI_URL}/")
             
-            # Verify the message from the followed user is visible
+            # verify the message from the followed user is visible
             assert test_message in driver.page_source
             assert following_name in driver.page_source
     finally:
@@ -402,7 +401,7 @@ def test_users_Timeline_only_shows_users_messages(db_session: Session):
 
             driver.get(f"{GUI_URL}/{user1_name}")
             
-            # Verify only user1's message is visible
+            # verify only user1 message is visible
             assert test_message_user1 in driver.page_source
             assert test_message_user2 not in driver.page_source
 
