@@ -22,6 +22,7 @@ from message import Message
 from user import User
 from sqlmodel import desc, or_, select
 from API_handler import router as API_handler
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # configuration
 DATABASE = "/tmp/minitwit.db"
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI):
 
 # create our little application :)
 app = FastAPI(lifespan=lifespan)
+
+instrumentator = Instrumentator().instrument(app)
+instrumentator.expose(app, endpoint="/metrics")
 # This function tells fastAPI to add all the endpoints in API_handler to it's list of endpoints.
 # When we run the minitwit.py file, it then also serves all those endpoints for the simulator.
 app.include_router(API_handler)
