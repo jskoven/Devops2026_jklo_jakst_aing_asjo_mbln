@@ -79,7 +79,6 @@ templates.env.filters["datetimeformat"] = format_datetime
 templates.env.filters["gravatar"] = gravatar_url
 
 
-
 @app.get("/")
 def timeline(request: Request, session: SessionDep):
     """Shows a users timeline or if no user is logged in it will redirect to public."""
@@ -345,9 +344,11 @@ def unfollow_user(username: str, request: Request, session: SessionDep):
 
     return RedirectResponse(url=f"/{username}", status_code=303)
 
+
 @app.get("/health")
-def health_check(request: Request): 
+def health_check(request: Request):
     return {"status": "latest"}
+
 
 if __name__ == "__main__":
     import uvicorn
