@@ -78,6 +78,7 @@ def gravatar_url(email, size=80):
 templates.env.filters["datetimeformat"] = format_datetime
 templates.env.filters["gravatar"] = gravatar_url
 
+
 @app.route("/health")
 def health_check():
     return "OK", 200
