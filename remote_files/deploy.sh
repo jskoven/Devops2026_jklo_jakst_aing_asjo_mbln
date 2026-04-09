@@ -1,8 +1,8 @@
 #!/bin/bash
 cd /minitwit || exit
 
-docker compose pull
+docker pull ${DOCKER_USERNAME}/minitwitimage:latest
 
-docker compose up -d
+docker stack deploy -c docker-compose.yml minitwit --with-registry-auth
 
 docker image prune -f

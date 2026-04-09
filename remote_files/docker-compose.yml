@@ -2,56 +2,75 @@ networks:
   minitwit-network:
     external: false
     name: minitwit-network
+version: '3.8'
 
 services:
   minitwit:
     image: ${DOCKER_USERNAME}/minitwitimage:latest
-    container_name: minitwit-prod
     ports:
-      - "80:5001" 
+      - "80:5001"
     environment:
       - DATABASE_URL=postgresql://minitwit_admin:12345@10.114.0.2:5432/minitwit
     networks:
       - minitwit-network
-    depends_on:
-      - grafana
-      - prometheus
- 
-    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        order: start-first  # start new container before stopping old one
+        delay: 10s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
 
   prometheus:
     image: ${DOCKER_USERNAME}/prometheus_image:latest
-    container_name: prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
     networks:
       - minitwit-network
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager 
 
   grafana:
     image: ${DOCKER_USERNAME}/grafana_image:latest
-    container_name: grafana
     ports:
       - "3000:3000"
     networks:
       - minitwit-network
     volumes:
       - grafana-storage:/var/lib/grafana
-    restart: always
-  
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
   loki:
     image: grafana/loki:3.0.0
-    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
     networks:
       - minitwit-network
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
   promtail:
     image: grafana/promtail:3.0.0
-    container_name: promtail
     user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -60,9 +79,13 @@ services:
     command: -config.file=/etc/promtail/config.yml
     networks:
       - minitwit-network
+    deploy:
+      mode: global # ensures one promtail runs on all nodes in the swarm
 
-
+networks:
+  minitwit-network:
+    driver: overlay
+    attachable: true
 
 volumes:
   grafana-storage: {}
-  elasticsearch-data: {}
