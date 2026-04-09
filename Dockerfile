@@ -11,7 +11,8 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y --no-install-recommends curl=7.88.1-10 \
+    && rm -rf /var/lib/apt/lists/*
 COPY . .
 
 CMD ["uvicorn", "minitwit:app", "--host", "0.0.0.0", "--port", "5001"]
