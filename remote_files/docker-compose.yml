@@ -1,7 +1,4 @@
-networks:
-  minitwit-network:
-    external: false
-    name: minitwit-network
+
 version: '3.8'
 
 services:
