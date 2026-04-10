@@ -23,5 +23,8 @@ scrape_configs:
     # Override the global default and scrape targets from this job every 5 seconds.
     scrape_interval: 5s
 
-    static_configs:
-      - targets: ['minitwit-prod:5001']
+    dns_sd_configs:
+      - names:
+          - 'tasks.minitwit_minitwit'
+        type: 'A'
+        port: 5001
