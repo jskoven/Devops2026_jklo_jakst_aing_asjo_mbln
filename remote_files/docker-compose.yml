@@ -44,7 +44,7 @@ services:
   grafana:
     image: ${DOCKER_USERNAME}/grafana_image:latest
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     networks:
       - minitwit-network
     volumes:
