@@ -10,12 +10,6 @@ services:
       - DATABASE_URL=postgresql://minitwit_admin:12345@10.114.0.2:5432/minitwit
     networks:
       - minitwit-network
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health').read()"]      interval: 10s
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     deploy:
       replicas: 3
       update_config:
@@ -33,7 +27,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks:
       - minitwit-network
     deploy:
@@ -58,7 +52,7 @@ services:
     image: grafana/loki:3.0.0
     command: -config.file=/etc/loki/local-config.yaml
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     networks:
       - minitwit-network
     deploy:
