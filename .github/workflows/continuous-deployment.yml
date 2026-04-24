@@ -10,6 +10,7 @@ on:
   pull_request:
 
 jobs:
+  
   test:
     runs-on: ubuntu-latest
     steps:
@@ -25,6 +26,22 @@ jobs:
       - name: Tear down after tests
         if: always()
         run: docker compose -f test/docker-compose.yml down -v
+  
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write  
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+    
   lint:
     needs: test
     runs-on: ubuntu-latest
@@ -57,7 +74,7 @@ jobs:
           commit_message: "style: auto-fixes by CI [skip ci]"
 
   build:
-    needs: lint # only deploys if lint step passes
+    needs: [lint, analyze] # shift left 
     if: github.event_name == 'push' # this should ensure we only deploy when we push to main, and not when we make prs
     runs-on: ubuntu-latest
     permissions:
