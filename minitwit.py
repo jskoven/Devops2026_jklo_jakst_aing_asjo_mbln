@@ -76,9 +76,7 @@ def gravatar_url(email, size=80):
 
 
 def is_safe_url(target):
-    # Ensure the URL is relative and not absolute
     ref_url = urlparse(target)
-    # netloc is the 'google.com' part. If it's empty, it's a local path.
     return not ref_url.scheme and not ref_url.netloc
 
 
