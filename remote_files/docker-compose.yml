@@ -26,8 +26,6 @@ services:
     image: ${DOCKER_USERNAME}/prometheus_image:latest
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
-    ports:
-      - "127.0.0.1:9090:9090"
     networks:
       - minitwit-network
     deploy:
@@ -38,7 +36,7 @@ services:
   grafana:
     image: ${DOCKER_USERNAME}/grafana_image:latest
     ports:
-      - "127.0.0.1:3000:3000"
+      3000:3000"
     networks:
       - minitwit-network
     volumes:
@@ -51,8 +49,6 @@ services:
   loki:
     image: grafana/loki:3.0.0
     command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "127.0.0.1:3100:3100"
     networks:
       - minitwit-network
     deploy:
