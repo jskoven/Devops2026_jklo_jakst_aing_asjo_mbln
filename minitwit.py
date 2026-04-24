@@ -23,6 +23,7 @@ from user import User
 from sqlmodel import desc, or_, select
 from API_handler import router as API_handler
 from prometheus_fastapi_instrumentator import Instrumentator
+from urllib.parse import urlparse
 
 # configuration
 DATABASE = "/tmp/minitwit.db"
@@ -73,6 +74,12 @@ def gravatar_url(email, size=80):
         size,
     )
 
+
+def is_safe_url(target):
+    # Ensure the URL is relative and not absolute
+    ref_url = urlparse(target)
+    # netloc is the 'google.com' part. If it's empty, it's a local path.
+    return not ref_url.scheme and not ref_url.netloc
 
 # Register filters with the templates environment
 templates.env.filters["datetimeformat"] = format_datetime
@@ -318,7 +325,10 @@ def follow_user(username: str, request: Request, session: SessionDep):
     session.add(new_followr)
     session.commit()
     flash(request, 'You are now following "%s"' % username)
-    return RedirectResponse(url=f"/{username}", status_code=303)
+    target_url = f"/{username}"
+    if not is_safe_url(target_url):
+        target_url = "/public" # Fallback
+    return RedirectResponse(url=target_url, status_code=303)
 
 
 @app.get("/{username}/unfollow")
@@ -342,7 +352,10 @@ def unfollow_user(username: str, request: Request, session: SessionDep):
 
     flash(request, 'You are no longer following "%s"' % username)
 
-    return RedirectResponse(url=f"/{username}", status_code=303)
+    target_url = f"/{username}"
+    if not is_safe_url(target_url):
+        target_url = "/public" # Fallback
+    return RedirectResponse(url=target_url, status_code=303)
 
 
 @app.get("/health")
