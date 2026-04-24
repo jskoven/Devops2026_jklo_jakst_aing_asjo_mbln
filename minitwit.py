@@ -81,6 +81,7 @@ def is_safe_url(target):
     # netloc is the 'google.com' part. If it's empty, it's a local path.
     return not ref_url.scheme and not ref_url.netloc
 
+
 # Register filters with the templates environment
 templates.env.filters["datetimeformat"] = format_datetime
 templates.env.filters["gravatar"] = gravatar_url
@@ -327,7 +328,7 @@ def follow_user(username: str, request: Request, session: SessionDep):
     flash(request, 'You are now following "%s"' % username)
     target_url = f"/{username}"
     if not is_safe_url(target_url):
-        target_url = "/public" # Fallback
+        target_url = "/public"  # Fallback
     return RedirectResponse(url=target_url, status_code=303)
 
 
@@ -354,7 +355,7 @@ def unfollow_user(username: str, request: Request, session: SessionDep):
 
     target_url = f"/{username}"
     if not is_safe_url(target_url):
-        target_url = "/public" # Fallback
+        target_url = "/public"  # Fallback
     return RedirectResponse(url=target_url, status_code=303)
 
 
