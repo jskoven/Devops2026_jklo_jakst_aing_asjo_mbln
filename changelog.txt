@@ -11,3 +11,4 @@ First lecture / exercise session:
 - Application initially wanted to run on port 5000, but port 5000 was already used by some important process on mac.
   Changed it to run on 5001.
 - Downloaded python dependencies (pip install flask, pip install workzeug)
+-
