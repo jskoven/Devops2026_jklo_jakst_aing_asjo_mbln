@@ -110,7 +110,7 @@ jobs:
       
       #then scan the image with DS and fail if any critical vulnerabilites are found 
       - name: Scan image with Docker Scout
-        uses: docker/scout-action@v1
+        uses: docker/scout-action@481412c8b8de36d0f79e85aa382c60397466feb6 #v1 got this sha from: git ls-remote https://github.com/docker/scout-action refs/tags/v1
         with:
           command: cves
           image: ${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest
