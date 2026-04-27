@@ -324,9 +324,6 @@ def follow_user(username: str, request: Request, session: SessionDep):
     session.add(new_followr)
     session.commit()
     flash(request, 'You are now following "%s"' % username)
-    # target_url = f"/{username}"
-    # if not is_safe_url(target_url):
-    #     target_url = "/public"  # Fallback
     target_url = request.url_for("user_timeline", username=username)
     return RedirectResponse(url=target_url, status_code=303)
 
@@ -351,10 +348,6 @@ def unfollow_user(username: str, request: Request, session: SessionDep):
         session.commit()
 
     flash(request, 'You are no longer following "%s"' % username)
-
-    # target_url = f"/{username}"
-    # if not is_safe_url(target_url):
-    #     target_url = "/public"  # Fallback
     target_url = request.url_for("user_timeline", username=username)
 
     return RedirectResponse(url=target_url, status_code=303)
