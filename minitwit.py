@@ -23,7 +23,6 @@ from user import User
 from sqlmodel import desc, or_, select
 from API_handler import router as API_handler
 from prometheus_fastapi_instrumentator import Instrumentator
-from urllib.parse import urlparse
 
 # configuration
 DATABASE = "/tmp/minitwit.db"
