@@ -75,11 +75,6 @@ def gravatar_url(email, size=80):
     )
 
 
-def is_safe_url(target):
-    ref_url = urlparse(target)
-    return not ref_url.scheme and not ref_url.netloc
-
-
 # Register filters with the templates environment
 templates.env.filters["datetimeformat"] = format_datetime
 templates.env.filters["gravatar"] = gravatar_url
