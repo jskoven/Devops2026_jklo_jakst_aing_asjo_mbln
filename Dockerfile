@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 2. Create non-root user and group
 # See article on running as non-root:
 # https://oneuptime.com/blog/post/2026-02-20-docker-rootless-containers/view
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 WORKDIR /app
 
