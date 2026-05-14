@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 from werkzeug.security import generate_password_hash
-from sqlalchemy import desc 
+from sqlalchemy import desc
 from message import Message
 from datetime import datetime
 import sys
