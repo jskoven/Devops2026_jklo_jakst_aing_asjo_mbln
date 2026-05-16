@@ -1,0 +1,50 @@
+\section{System's Perspective}
+%%
+
+\begin{figure}
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/Minitwit.png}}
+    \caption{Architecture of the MiniTwit System}
+    \label{fig:minitwit_arch}
+\end{figure}
+
+\subsection{Design \& Architecture}
+
+\subsection{Dependencies}
+TODO: static diagram of dependencies - Component diagram
+\subsubsection{Infrastructure}
+\begin{itemize}
+    \item \textbf{DigitalOcean Droplets}: Provides the hardware (CPU, Memory, Storage) to run a Linux OS on, hosting our services.
+    \item \textbf{Docker}: Allows us to containerize our services.
+    \item \textbf{Docker Swarm}: A part of Docker, allowing us to handle horizontal scaling and manage container health, update strategies and general management.
+    \item \textbf{PostgreSQL}: A relational database management system, allowing us to write and read messages, log-in data and user-data concurrently.
+\end{itemize}
+
+\subsubsection{Application}
+\begin{itemize} 
+	\item \textbf{fastapi}: The asynchronous web framework handling routing, requests, and endpoints. 
+	\item \textbf{uvicorn}: The web server deployment dependency used to run the FastAPI application.
+	\item \textbf{Jinja2}: The template engine used for server-side rendering of user timelines and layouts. 
+	\item \textbf{sqlmodel} / \textbf{SQLAlchemy}: The ORM used to abstract database interactions into Python code. 
+	\item \textbf{psycopg2-binary}: The PostgreSQL  adapter required to handle high-concurrency network communication with our database container. 
+	\item \textbf{Werkzeug} / \textbf{itsdangerous} : Cryptographic utility relied upon for password hashing (\textbf{generate\_password\_hash}) and session tokens. 
+\end{itemize}
+
+\subsubsection{Monitoring}
+\begin{itemize}
+    \item \textbf{Prometheus}: A systems monitoring toolkit used to scrape and monitor time-series metrics.
+    \item \textbf{Loki:} A log scraper that aggregates application text logs.
+    \item \textbf{Promtail}: A service attached to all containers, which streams container stdout logs to Loki.
+    \item \textbf{Grafana}: A data visualization and analytics web application, allowing us to query and monitor the output of the above and organize it in dashboards.
+\end{itemize}
+
+\subsubsection{Pipeline}
+\begin{itemize}
+    \item \textbf{GitHub Actions}: Our CI/CD platform that automates our deployment, testing and building.
+    \item \textbf{Docker Buildx and QEMU}: Compilation tools allowing us to create Docker Images that are agnostic to the OS they're being run on.
+    \item \textbf{Black}: A code formatting tool allowing us to ensure an identical code style.
+    \item \textbf{Hadolint}: An analysis tool that scans docker images for known vulnerabilities.
+    \item \textbf{ShellCheck}: An analysis tool that scans shell files for bugs, syntax errors and vulnerabilities.
+\end{itemize}
+
+\subsection{Current System State}
+% for example using results of static analysis and quality assessments.

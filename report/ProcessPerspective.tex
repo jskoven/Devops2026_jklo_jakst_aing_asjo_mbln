@@ -1,0 +1,71 @@
+\section{Process' Perspective}
+\subsection{Pipelines}
+% deployment and release of your systems
+Our pipeline is automated using GitHub Actions, triggered on every push and pull request to the main branch. We defined a four-stage process for it: Test, Analyze, Build and Deploy.
+\subsubsection{Test stage}
+The first stage is the testing stage. We use a docker compose file to spin up the application in a separate environment alongside the dependencies it needs, to ensure that the test-environment is as identical to the deployed environment as possible. The test container then runs all our defined tests via \textit{pytest}. The container is ran with the command \textit{"--exit-code-from test"}, ensuring that the exit code from the step is pulled from the tests. This means that if a test fails, the container exits with a non-zero code which stops the pipeline from proceeding further.
+
+% Evt tilføj lidt mere ift hvilke tests, hvilke test dependencies etc her - Jeg har ik arbejdet med det så ved ik så meget om det, tror det var Asger?
+
+\subsubsection{Analyze}
+The next step involves a group of static analysis tools. Unlike the previous stage, this stage does not execute the application or start containers. Instead, it reads the source code and files to ensure security and quality standards.
+\begin{itemize}
+    \item \textbf{GitHub CodeQL}: we use CodeQL to perform an analysis of our codebase. CodeQL automatically identifies vulnerabilities such as SQL-injection points and insecure data handling, vulnerabilities that standard unit tests could miss. This step uses a list of vulnerabilities curated by GitHub's security team. This ensure that any push or pull request to main is analyzed for security before hitting the server.
+    \item \textbf{Hadolint}: Hadolint is \textit{"Smarter dockerfile linter that helps you build best practice Docker images"} \footnote{https://github.com/hadolint/hadolint}. It parses the image into an AST, and analyzes it for vulnerabilities. % Måske tilføj lidt mere om hadolint her, det her var bare lige hvad jeg kunne finde hurtigt
+    \item \textbf{Black}: A Python code formatter we've used to ensure code consistency across all our code, which serves to reduce "noise" in Git diffs, as well as ensure a consistent coding style across the codebase. While several linters / formatters exists for Python, we chose black as it seemed to be very well documented and highly regarded.
+    \item \textbf{ShellCheck}: We used ShellCheck as a part of our pipeline to analyze any shell files we had, as none of us were very well versed in shell coding. ShellCheck ensured that small bugs and errors in any shell files, such as our \textit{deploy.sh}, were picked up before being pushed to the server.
+\end{itemize}
+
+\subsubsection{Build}
+Once all test and analysis steps have finished, we proceed to the build stage. This stage is responsible for building the Docker images from the codebase, and checking vulnerabilities before they are then released to Dockerhub. This is done with Docker Buildx and QEMU. QEMU (\textit{Quick Emulator}) allows us to make the resulting image agnostic to which OS it is ran on. This came as a result of the team having a mix of OS architectures, namely ARM (Mac) and x86 (Windows). While this just about doubles the pipeline duration, it was a necessity for the team.
+
+Before the image is pushed to a public repository, we make use of \textit{Docker Scout} to scan the image for vulnerabilities. Docker Scout creates a list of components and dependencies in the image and \textit{"matches it against a continuously updated vulnerability database"}\footnote{https://docs.docker.com/scout/} It is configured with a \textit{"fail-on: critical"} policy, ensuring that any part of the image that contains a vulnerability marked as "critical" stops the whole image from leaving the pipeline.
+
+The image is then pushed to DockerHub with credentials safely secured in GitHub Secrets. After the push, a final security analysis is done with \textit{Trivy}, a security scanner akin to Docker Scout. While this may very well be redundant, as Docker Scout and Trivy often overlap, we deemed it worth it for the potential that one might find an issue the other one did not.
+
+
+\subsubsection{Release and deployment}
+Once the image is pushed to DockerHub, the pipeline starts a SCP (Secure Copy Protocol) to synchronize a folder "\textit{remote\_files}" onto the production server. The pipeline then uses SSH to execute a script on the server, \textit{deploy.sh}, which manages three tasks:
+\begin{itemize}
+    \item 1: Pull the latest image image from DockerHub, the one pushed in this release.
+    \item 2: Run \textit{"docker stack deploy"}, creating a Docker Swarm to start a cluster of containers instead of just a single container.
+    \item 3: Runs \textit{"docker image prune -f"} to remove old images.
+\end{itemize}
+The Docker Swarm runs with 3 replicas, ensuring that up to 2 containers can go down at a time without causing an error for the end-user. The swarm is also running with \textit{"order: start-first"} to minimize any downtime and ensure rolling updates. This means the swarm will spin up a new container with the new image, wait till it is healthy, and only then prune the old container before continuing on to the next container. It is configured with \textit{"parallelism: 1"} to ensure only 1 of the 3 containers in the swarm is updated at a time.
+
+\subsection{Monitoring \& Logging}
+\subsubsection{Monitoring}
+\noindent We have implemented a monitoring stack using Prometheus and Grafana. Both of these are containerized and deployed as part of our docker swarm.\newline
+
+\noindent Our Prometheus instance is set up to scrape time series metrics every 5 seconds from all three replicas of the application and our Grafana instance is set up to load pre defined dashboards that visualize these metrics. The flow can be seen in figure \ref{fig:monitoring}.\newline
+
+\noindent This is all to get a real-time overview of the systems health and performance. We maintain the following three dashboards:
+\begin{itemize}
+    \item Health dashboard: Tells us the status (UP/DOWN) of the application and Prometheus itself.
+    \item Performance dashboard: Visualizes various metrics of the application to give an indication of the performance. These include; total HTTP request and rate, total HTTP failures and success rate, response time and more.
+    \item Database status... % cant access grafana and dont remember what the database dashboard shows exactly..
+\end{itemize}
+
+\subsubsection{Logging}
+
+\subsection{Security}
+(Notes) Reverse proxy, TLS $\rightarrow$ HTTPS, Certbot for TLS certificates. Minitwit application runs on localhost:8080, and only available through Nginx, which is available on our public IP address.\\
+
+\noindent Insert diagram of reverse proxy structure, including all used ports in application, either here or somewhere else. Similar to diagram from lecture 10/11(?).\\ 
+
+\noindent \textit{The following general steps will guide you through a security assessment. Consider using them as steps in a report. The report will become a section in your final project report.} \\
+\textbf{USIKKER PÅ, OM MAN VIRKELIG SKAL LAVE EN SÅ FYLDESTGØRENDE SECURITY ASSESSMENT SOM DER LÆGGES OP TIL, MED RISK MATRIX OSV.?}
+\subsubsection{Security Assessment}
+\subsubsection*{Risk Identification}
+Identify assets (e.g. web application)\\
+Identify threat sources (e.g. SQL injection)\\
+Construct risk scenarios (e.g. Attacker performs SQL injection on web application to download sensitive user data)
+\subsubsection*{Risk Analysis}
+Determine likelihood\\
+Determine impact\\
+Use a Risk Matrix to prioritize risk of scenarios\\
+Discuss what you are going to do about each of the scenarios
+
+
+\subsection{Availability \& Scaling}
+(Notes) The application is available at \url{https://www.helgeandfriends.com/}. We used One.com to register the domain and add an A record to point to our public IP address (161.35.68.148).

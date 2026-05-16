@@ -1,0 +1,68 @@
+
+\section{Reflection Perspective}
+\subsection{Evolution \& Refactoring}
+We had some issues setting up TLS.....
+
+\subsection{Operation}
+% maybe something about issues with ports beeing used by macOS
+
+\subsubsection{Deployment of Monitoring Stack}
+\noindent When attempting to deploy our monitoring stack, we ran into several issues that prevented the update. Although the pipeline appeared to work, the server remained stuck on an older version because it was unable to get the new images. \newline
+
+\noindent \textbf{Local Build Failures (Commit 6a222b2cf7c3fa155d9425e72b778eb4828a5caa)} \
+We initially edited a legacy \texttt{docker-compose.yml} file in the root folder, which had no effect on production. After moving to the correct file in \texttt{remote\_files/}, the deployment failed because the configuration incorrectly instructed the server to build the app from local source code, \texttt{remote\_files/docker-compose.yml}:
+\begin{quote}
+\begin{verbatim}
+prometheus:
+build:
+context: ../monitoring/prometheus
+\end{verbatim}
+\end{quote}
+
+\noindent Since the server does not store the source code, it could not execute this build. As a result, the server could not generate the new image and continued running the version from 2 days ago. We resolved this in \textbf{Commit b20ee33b0e54661881a8e1e610f1260f77dea086} by instructing the server to pull pre-built images from Docker Hub instead \texttt{remote\_files/docker-compose.yml}:
+\begin{quote}
+\begin{verbatim}
+prometheus:
+image: ${DOCKER_USERNAME}/prometheus_image:latest
+\end{verbatim}
+\end{quote}
+
+\noindent \textbf{Pipeline Misguidance (Commit 2667607971c13338e024e2e073c9636f1ffb544a)} \
+Our GitHub pipeline reported success because it only verified that the SSH connection was established, not the outcome of the deployment script:
+\begin{quote}
+\begin{verbatim}
+ssh $SSH_USER@$SSH_HOST "... && /minitwit/deploy.sh"
+\end{verbatim}
+\end{quote}
+
+\noindent Evidence from the server (Appendix \ref{fig:server_log}) confirmed this "false success." The system remained on a 2-day-old image (\texttt{cce05ed600a0}) even after we had pushed new changes. This confirmed that the script was failing while GitHub incorrectly signaled a green check mark. To fix this, we updated our pipeline to build the images in GitHub first, and then push them to Docker Hub.\newline
+
+\noindent This incident highlighted the danger of duplicate configuration files and silent pipeline failures. We have since removed the legacy root file and updated our workflow to ensure the pipeline indicates a failure if the deployment fails on the server.
+
+\subsubsection{Monitoring with Docker Swarms}
+After migrating to Docker Swarm our monitoring stack failed to scrape data and showed empty dashboards all of a sudden (see \ref{fig:empty_dashboard}). \newline
+
+\noindent Initially we thought to fix this by hardcoding the server's IP address as a target for the data scraping, but we realized that in a swarm environment, containers are dynamic. They move between nodes and change internal IP's. A hardcoded target would only monitor a single instance, and would break if the Swarm moved the container to a different address.\newline
+
+\noindent We resolved this in \textbf{Commit 5b452bd9cd28dd3b8b6a78b44c4141168097d986} by switching to DNS service discovery. Instead of a fixed IP, we used the \texttt{tasks.} prefix, which tells Prometheus to query Docker’s internal DNS for the IP's of all three running replicas \texttt{monitoring/prometheus/prometheus.yml}:
+
+\begin{quote}
+\begin{verbatim}
+dns_sd_configs:
+
+names: ['tasks.minitwit_minitwit']
+type: 'A'
+port: 5001
+\end{verbatim}
+\end{quote}
+
+\noindent This allowed Prometheus to automatically detect and scrape all three containers, as confirmed by the three active endpoints in Figure \ref{fig:monitoring_fixed}.
+\subsection{Maintenance}
+% server was down at some point right? what happend there?
+
+
+% Also reflect and describe what was the "DevOps" style of your work. For example, what did you do differently to previous development projects and how did it work?
+\subsection{Workflow}
+\noindent Initially, we struggled to maintain an overview of weekly tasks and distribute them among the team. This led to instances where multiple members unknowingly worked on the same task, resulting in duplicated work.\newline
+
+\noindent To help with this we adopted GitHub issues, where we could add all the main tasks of the week with descriptive sub tasks for each of them. This workflow gave us a clear overview of our progress and allowed us to link our planning directly to working on the task by creating branches and Pull Requests directly from specific issues.
