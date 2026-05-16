@@ -15,4 +15,5 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: PDF
-          path: main.pdf
+          path: '**/*.pdf'
+          if-no-files-found: error
