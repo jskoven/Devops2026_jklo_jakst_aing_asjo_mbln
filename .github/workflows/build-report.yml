@@ -13,9 +13,9 @@ jobs:
         with:
           working_directory: report/
           root_file: main.tex
-#      - name: Upload PDF file
-#        uses: actions/upload-artifact@v6
-#        with:
-#          name: PDF
-#          path: '**/*.pdf'
-#          if-no-files-found: error
+      - name: Push PDF file to report directory
+        uses: actions/download-artifact@v6
+        with:
+          name: PDF
+          path: '**/*.pdf'
+          if-no-files-found: error
