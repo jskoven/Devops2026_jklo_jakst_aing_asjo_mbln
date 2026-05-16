@@ -15,4 +15,4 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: PDF
-          path: report/MSc_Group_C.pdf
+          path: MSc_Group_C.pdf
