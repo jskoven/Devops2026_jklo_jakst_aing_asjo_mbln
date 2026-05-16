@@ -3,6 +3,7 @@ on: [push]
 jobs:
   build_latex:
     runs-on: ubuntu-latest
+    work_in_root_file_dir: true
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v6
