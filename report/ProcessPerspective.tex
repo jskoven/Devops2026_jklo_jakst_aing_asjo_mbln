@@ -1,6 +1,11 @@
 \section{Process' Perspective}
 \subsection{Pipelines}
 % deployment and release of your systems
+%A complete description and illustration of stages and tools included in the CI/CD pipelines, including deployment and release of your systems.
+%How do you monitor your systems and what precisely do you monitor?
+%What do you log in your systems and how do you aggregate logs?
+%Brief description of how you security hardened your systems.
+%How do you handle availability and scaling in your systems?
 Our pipeline is automated using GitHub Actions, triggered on every push and pull request to the main branch. We defined a four-stage process for it: Test, Analyze, Build and Deploy.
 \subsubsection{Test stage}
 The first stage is the testing stage. We use a docker compose file to spin up the application in a separate environment alongside the dependencies it needs, to ensure that the test-environment is as identical to the deployed environment as possible. The test container then runs all our defined tests via \textit{pytest}. The container is ran with the command \textit{"--exit-code-from test"}, ensuring that the exit code from the step is pulled from the tests. This means that if a test fails, the container exits with a non-zero code which stops the pipeline from proceeding further.
@@ -42,30 +47,23 @@ The Docker Swarm runs with 3 replicas, ensuring that up to 2 containers can go d
 \noindent This is all to get a real-time overview of the systems health and performance. We maintain the following three dashboards:
 \begin{itemize}
     \item Health dashboard: Tells us the status (UP/DOWN) of the application and Prometheus itself.
-    \item Performance dashboard: Visualizes various metrics of the application to give an indication of the performance. These include; total HTTP request and rate, total HTTP failures and success rate, response time and more.
-    \item Database status... % cant access grafana and dont remember what the database dashboard shows exactly..
+    \item Performance dashboard: Visualizes various metrics of the application to give an indication of the performance. These include; total HTTP requests and rates, total HTTP failures and success rates, response time, etc.
+    \item Database dashboard, showing current amount of unique users, and latest entries.
 \end{itemize}
 
 \subsubsection{Logging}
 
 \subsection{Security}
-(Notes) Reverse proxy, TLS $\rightarrow$ HTTPS, Certbot for TLS certificates. Minitwit application runs on localhost:8080, and only available through Nginx, which is available on our public IP address.\\
+\noindent We have implemented Nginx as a reverse proxy, which listens for traffic on port 80 (HTTP) \& port 443 (HTTPS). HTTP requests are redirected to HTTPS. Any incoming traffic is forwarded to our minitwit application, which is running locally on the droplet. Nginx then fetches the response and sends it back to the client. This assures we only have a single point of access. \\
+\noindent Certbot manages SSL certificates, ensuring all communication for end users is TLS encrypted. \\
 
-\noindent Insert diagram of reverse proxy structure, including all used ports in application, either here or somewhere else. Similar to diagram from lecture 10/11(?).\\ 
+\noindent We use Uncomplicated Firewall (UFW) to only expose certain ports. 
 
-\noindent \textit{The following general steps will guide you through a security assessment. Consider using them as steps in a report. The report will become a section in your final project report.} \\
-\textbf{USIKKER PÅ, OM MAN VIRKELIG SKAL LAVE EN SÅ FYLDESTGØRENDE SECURITY ASSESSMENT SOM DER LÆGGES OP TIL, MED RISK MATRIX OSV.?}
-\subsubsection{Security Assessment}
-\subsubsection*{Risk Identification}
-Identify assets (e.g. web application)\\
-Identify threat sources (e.g. SQL injection)\\
-Construct risk scenarios (e.g. Attacker performs SQL injection on web application to download sensitive user data)
-\subsubsection*{Risk Analysis}
-Determine likelihood\\
-Determine impact\\
-Use a Risk Matrix to prioritize risk of scenarios\\
-Discuss what you are going to do about each of the scenarios
+%\noindent Insert diagram of reverse proxy structure, including all used ports in application, either here or somewhere else. Similar to diagram from lecture 10/11(?). Probably covered in architecture diagram, so maybe unnecessary.\\ 
+
 
 
 \subsection{Availability \& Scaling}
-(Notes) The application is available at \url{https://www.helgeandfriends.com/}. We used One.com to register the domain and add an A record to point to our public IP address (161.35.68.148).
+The application is available at \url{https://www.helgeandfriends.com/}. We used One.com to register the domain and add an A record to point to our public IP address (161.35.68.148). \\ %Måske hører det til et andet sted, men jeg ved ikke lige hvor /Anders
+
+\noindent As our traffic grew, we needed to scale our setup to accommodate for this increase. We did so by adjusting our Docker setup to swarm mode. Docker Swarm allows for multiple, concurrent services, meaning our application could handle more requests. Additionally, it also helped our availability, as with multiple services, the application would still stay up and running if one were to fail. 

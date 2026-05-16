@@ -57,6 +57,10 @@ port: 5001
 \end{quote}
 
 \noindent This allowed Prometheus to automatically detect and scrape all three containers, as confirmed by the three active endpoints in Figure \ref{fig:monitoring_fixed}.
+
+\subsubsection{API for simulator}
+When we initially set up the API for the simulator, we ran into an issue with correctly defining the endpoints. None of us had before used FastAPI, so we were not completely aware of the ordering of the defined endpoints. This lead to about a week of missed data from the simulator. This was fixed in \textbf{commit 20898c14851290e95260c65ecea6592bc5829c23}. Because of this, we saw a lot of errors for a short period of time, where the simulator attempted to interact with MiniTwit via users that were not stored in our database. We discussed seeing if we could obtain a snapshot of another teams database, but decided that it was unnecessary as new users would, over time, be created by the simulator.
+
 \subsection{Maintenance}
 % server was down at some point right? what happend there?
 

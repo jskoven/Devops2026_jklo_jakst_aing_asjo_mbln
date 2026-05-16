@@ -1,5 +1,5 @@
 \section{System's Perspective}
-%%
+%Design and architecture of your \textit{ITU-MiniTwit} systems. That is, list and briefly describe all technologies and tools you applied and depend on. Describe the current state of your systems, for example using results of static analysis and quality assessments.%
 
 \begin{figure}
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/Minitwit.png}}
@@ -8,9 +8,22 @@
 \end{figure}
 
 \subsection{Design \& Architecture}
+\subsubsection{Application}
+The minitwit application is a webapp twitter-like clone with simple functionality where users of the application can post tweets and follow each other.The application is written in Python with Jinja templates. The application has an API that contains the same functionality as the webapp. 
+\subsubsection{Infrastructre}
+\noindent\textbf{Infrastructure}\newline
+Our system runs on three droplets hosted on DigitalOcean. Two swarm nodes form our swarm cluster. Minitwit-server 1 acts as a manager-worker and Minitwit-server 2 solely a worker. The last droplet is dedicated to hosting the sytem's Postgress database.\\
+
+\noindent Besides managing container orchestration Mnitwit-server 1 is hosting 2 application replicas, a Promtail, Loki and Grafana replica. Minitwit-server 2 is hosting 1 application replica and a Promtail replica. Niginx is used as a reversed-proxy listening for incoming requests at port:80/443. Nginx forwards the given request and then the routing mesh of docker swarm forwards the request to an available replica. The routing mesh of the swarm ensures that each node in the cluster can handle any request regardless of which node is hosting the appropriate container. 
+\subsubsection{Monitoring}
+Our system monitors the web application using Prometheus, Loki, Promtail and Grafana. Docker has been used for containerization of the sytem's services.\newline 
 
 \subsection{Dependencies}
-TODO: static diagram of dependencies - Component diagram
+\begin{figure}[h]
+    \makebox[\textwidth][c]{\includegraphics[width=1.4\textwidth]{img/Component_diagram-3.jpg}}
+    \caption{Component diagram of the MiniTwit system, showing provided interfaces and dependencies between the core application, database and monitoring services}
+    \label{fig:minitwit_arch}
+\end{figure}
 \subsubsection{Infrastructure}
 \begin{itemize}
     \item \textbf{DigitalOcean Droplets}: Provides the hardware (CPU, Memory, Storage) to run a Linux OS on, hosting our services.
@@ -47,4 +60,5 @@ TODO: static diagram of dependencies - Component diagram
 \end{itemize}
 
 \subsection{Current System State}
+\textit{Describe the current state of your systems, for example using results of static analysis and quality assessments.}
 % for example using results of static analysis and quality assessments.

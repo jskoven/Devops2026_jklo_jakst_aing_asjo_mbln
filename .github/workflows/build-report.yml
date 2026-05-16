@@ -1,5 +1,7 @@
 name: Build LaTeX document
 on: [push]
+permissions:
+  contents: write
 jobs:
   build_latex:
     runs-on: ubuntu-latest
@@ -11,9 +13,9 @@ jobs:
         with:
           working_directory: report/
           root_file: main.tex
-      - name: Upload PDF file
-        uses: actions/upload-artifact@v6
-        with:
-          name: PDF
-          path: '**/*.pdf'
-          if-no-files-found: error
+#      - name: Upload PDF file
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: PDF
+#          path: '**/*.pdf'
+#          if-no-files-found: error
