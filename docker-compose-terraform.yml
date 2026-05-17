@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  minitwit:
+    image: ${DOCKER_USERNAME}/minitwitimage:latest
+    ports:
+      - "8080:5001"
+    environment:
+      - DATABASE_URL=postgresql://minitwit_admin:12345@$DB_PRIVATE_IP:5432/minitwit
+    networks:
+      - minitwit-network
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        order: start-first
+        delay: 10s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+
+  prometheus:
+    image: ${DOCKER_USERNAME}/prometheus_image:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - minitwit-network
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager 
+
+  grafana:
+    image: ${DOCKER_USERNAME}/grafana_image:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - minitwit-network
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  loki:
+    image: grafana/loki:3.0.0
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - minitwit-network
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - minitwit-network
+    configs:
+      - source: promtail_config
+        target: /etc/promtail/config.yml
+    deploy:
+      mode: global 
+
+networks:
+  minitwit-network:
+    driver: overlay
+    attachable: true
+
+volumes:
+  grafana-storage: {}
+
+configs:
+  promtail_config:
+    file: ./promtail/config.yml

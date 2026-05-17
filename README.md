@@ -63,3 +63,56 @@ The pipeline will compile images via Docker Buildx, push them to Docker Hub, SSH
 ```bash
 docker stack deploy --with-registry-auth -c docker-compose.yml minitwit
 ```
+
+## 4. Automated Production Deployment (Terraform & Swarm)
+
+### Local Tooling Requirements
+Before running the deployment script, ensure you have the following components installed:
+* **Terraform CLI:** 
+* **Docker Engine / CLI:**
+* **SSH Client Tools:** 
+
+### Setup & Configuration
+
+#### Generate the Project SSH Key Pair
+The cluster requires a dedicated SSH key pair to create a secure connections between the droplets. Run this command from the root of the repository to generate them exactly where the scripts expect them:
+
+```bash
+mkdir -p ssh_key
+ssh-keygen -t rsa -b 4096 -q -N '' -f ./ssh_key/terraform
+```
+*(Note: The `./secrets` configuration file and the `./ssh_key/` directory are explicitly blocked inside our `.gitignore` to prevent leaking private credentials to public version control platforms).*
+
+#### Generate a DigitalOcean Token
+1. Log in to DigitalOcean
+2. Navigate to the API section on the navigation menu.
+3. Under the Tokens/Keys tab, select Generate New Token.
+4. Define a token name and ensure it is granted Full Access
+5. Copy the generated string
+
+#### Populate Local Secrets Environment
+Create a new file named exactly `secrets` in the root of the repository. Add the following two lines, replacing the placeholder strings with your platform credentials:
+
+```bash
+export TF_VAR_do_token="your_actual_digital_ocean_api_token_here"
+export DOCKER_USERNAME=jskoven
+```
+
+### System Deployment
+
+Once your keys are generated and your secrets file is configured, the entire live platform can be built and deployed with a single command:
+
+```bash
+# Grant execution permissions to the script
+chmod +x deploy.sh
+
+# Execute the deployment
+./deploy.sh
+```
+### Tearing Down
+To dismantle the stack and remove droplets from DigitalOcean, run this command:
+
+```bash
+source secrets
+terraform destroy -auto-approve
+```
