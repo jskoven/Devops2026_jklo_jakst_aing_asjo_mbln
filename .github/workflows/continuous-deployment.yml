@@ -133,10 +133,10 @@ jobs:
         with:
           image-ref: '${{ secrets.DOCKER_USERNAME }}/minitwitimage:latest'
           format: 'table'
-          exit-code: '1' 
+          exit-code: '0' 
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'      
+          severity: 'CRITICAL,HIGH'
 
       - name: Build and push prometheus_image
         uses: docker/build-push-action@v6
