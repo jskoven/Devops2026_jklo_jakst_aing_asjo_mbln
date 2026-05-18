@@ -1,16 +1,19 @@
 
 \section{Reflection Perspective}
 \subsection{Evolution \& Refactoring}
-We had some issues setting up TLS.....
+Refactoring the system to utilize the Object-relational-mapper(ORM) was challenging as it involved a large refactoring of tests and endpoints for our system. Additionally, it required a new way to handle the connection string for the database. It was implemented simultaneously with a migration to a new database, which was also a bit of a challenge as SQLite and Postgress databases' connection strings is treated differently by the ORM.\newline 
 
-\subsection{Operation}
-% maybe something about issues with ports beeing used by macOS
+\noindent Furthermore, extra effort had to be made to ensure that the flash messages of the Jinja templates could be used after this refactor, as seen from this commit \textbf{3c391f4762837f35d4fcc3b2b84d48812cac43d1}. 
+
+\subsection{Operation \& Maintenance}
+
 
 \subsubsection{Deployment of Monitoring Stack}
-\noindent When attempting to deploy our monitoring stack, we ran into several issues that prevented the update. Although the pipeline appeared to work, the server remained stuck on an older version because it was unable to get the new images. \newline
+\noindent When attempting to deploy our monitoring stack we had issues with building and pushing our images onto Docker Hub through our pipeline. We saw issues where the pipeline reported success, but the server had not pulled the latest deployed images. \newline
 
-\noindent \textbf{Local Build Failures (Commit 6a222b2cf7c3fa155d9425e72b778eb4828a5caa)} \
-We initially edited a legacy \texttt{docker-compose.yml} file in the root folder, which had no effect on production. After moving to the correct file in \texttt{remote\_files/}, the deployment failed because the configuration incorrectly instructed the server to build the app from local source code, \texttt{remote\_files/docker-compose.yml}:
+\noindent This happened because our configuration was trying to build the service locally on the server from source code. As shown in commit \texttt{b20ee33b0e54661881a8e1e610f1260f77dea086}, we fixed this by  getting the configuration to pull the pre-built image from Docker Hub instead.\newline
+
+\noindent Before:
 \begin{quote}
 \begin{verbatim}
 prometheus:
@@ -18,8 +21,7 @@ build:
 context: ../monitoring/prometheus
 \end{verbatim}
 \end{quote}
-
-\noindent Since the server does not store the source code, it could not execute this build. As a result, the server could not generate the new image and continued running the version from 2 days ago. We resolved this in \textbf{Commit b20ee33b0e54661881a8e1e610f1260f77dea086} by instructing the server to pull pre-built images from Docker Hub instead \texttt{remote\_files/docker-compose.yml}:
+\noindent After:
 \begin{quote}
 \begin{verbatim}
 prometheus:
@@ -27,24 +29,18 @@ image: ${DOCKER_USERNAME}/prometheus_image:latest
 \end{verbatim}
 \end{quote}
 
-\noindent \textbf{Pipeline Misguidance (Commit 2667607971c13338e024e2e073c9636f1ffb544a)} \
-Our GitHub pipeline reported success because it only verified that the SSH connection was established, not the outcome of the deployment script:
-\begin{quote}
-\begin{verbatim}
-ssh $SSH_USER@$SSH_HOST "... && /minitwit/deploy.sh"
-\end{verbatim}
-\end{quote}
 
-\noindent Evidence from the server (Appendix \ref{fig:server_log}) confirmed this "false success." The system remained on a 2-day-old image (\texttt{cce05ed600a0}) even after we had pushed new changes. This confirmed that the script was failing while GitHub incorrectly signaled a green check mark. To fix this, we updated our pipeline to build the images in GitHub first, and then push them to Docker Hub.\newline
 
-\noindent This incident highlighted the danger of duplicate configuration files and silent pipeline failures. We have since removed the legacy root file and updated our workflow to ensure the pipeline indicates a failure if the deployment fails on the server.
+\noindent Evidence from running \texttt{docker ps} on the server confirmed this issue. As shown in Appendix \ref{fig:server_log}, the container was still running an old image ID from two days ago, proving that the pipelines success status was misleading because the server had not actually pulled the new updates.\newline
+
+
 
 \subsubsection{Monitoring with Docker Swarms}
-After migrating to Docker Swarm our monitoring stack failed to scrape data and showed empty dashboards all of a sudden (see \ref{fig:empty_dashboard}). \newline
+After migrating to Docker Swarm our monitoring stack failed to scrape data and showed empty dashboards. (Appendix \ref{fig:empty_dashboard}). \newline
 
-\noindent Initially we thought to fix this by hardcoding the server's IP address as a target for the data scraping, but we realized that in a swarm environment, containers are dynamic. They move between nodes and change internal IP's. A hardcoded target would only monitor a single instance, and would break if the Swarm moved the container to a different address.\newline
+\noindent Initially we thought to fix this by hard-coding the server's IP address as a target for the data scraping, but we realized that in a swarm environment, containers are dynamic. They start on different nodes with different IP's on every re-start. A hardcoded target would only monitor a single instance, and would break if the Swarm moved the container to a different address.\newline
 
-\noindent We resolved this in \textbf{Commit 5b452bd9cd28dd3b8b6a78b44c4141168097d986} by switching to DNS service discovery. Instead of a fixed IP, we used the \texttt{tasks.} prefix, which tells Prometheus to query Docker’s internal DNS for the IP's of all three running replicas \texttt{monitoring/prometheus/prometheus.yml}:
+\noindent We resolved this in \texttt{Commit 5b452bd9cd28dd3b8b6a78b44c4141168097d986} by switching to DNS service discovery. Instead of a fixed IP, we used the \texttt{tasks.} prefix, which tells Prometheus to query Docker’s internal DNS for the IP's of all three running replicas \texttt{monitoring/prometheus/prometheus.yml}:
 
 \begin{quote}
 \begin{verbatim}
@@ -59,14 +55,18 @@ port: 5001
 \noindent This allowed Prometheus to automatically detect and scrape all three containers, as confirmed by the three active endpoints in Figure \ref{fig:monitoring_fixed}.
 
 \subsubsection{API for simulator}
-When we initially set up the API for the simulator, we ran into an issue with correctly defining the endpoints. None of us had before used FastAPI, so we were not completely aware of the ordering of the defined endpoints. This lead to about a week of missed data from the simulator. This was fixed in \textbf{commit 20898c14851290e95260c65ecea6592bc5829c23}. Because of this, we saw a lot of errors for a short period of time, where the simulator attempted to interact with MiniTwit via users that were not stored in our database. We discussed seeing if we could obtain a snapshot of another teams database, but decided that it was unnecessary as new users would, over time, be created by the simulator.
-
-\subsection{Maintenance}
-% server was down at some point right? what happend there?
+When we initially set up the API for the simulator, we ran into an issue with correctly defining the endpoints. None of us had before used FastAPI, so we were not completely aware of the ordering of the defined endpoints. This lead to about a week of missed data from the simulator. This was fixed in \texttt{commit 20898c14851290e95260c65ecea6592bc5829c23}. Because of this, we saw a lot of errors for a short period of time, where the simulator attempted to interact with Minitwit via users that were not stored in our database. We discussed seeing if we could obtain a snapshot of another teams database, but decided that it was unnecessary as new users would, over time, be created by the simulator.
 
 
-% Also reflect and describe what was the "DevOps" style of your work. For example, what did you do differently to previous development projects and how did it work?
+
+
+
 \subsection{Workflow}
+% Also reflect and describe what was the "DevOps" style of your work. For example, what did you do differently to previous development projects and how did it work?
 \noindent Initially, we struggled to maintain an overview of weekly tasks and distribute them among the team. This led to instances where multiple members unknowingly worked on the same task, resulting in duplicated work.\newline
 
-\noindent To help with this we adopted GitHub issues, where we could add all the main tasks of the week with descriptive sub tasks for each of them. This workflow gave us a clear overview of our progress and allowed us to link our planning directly to working on the task by creating branches and Pull Requests directly from specific issues.
+\noindent To help with this we adopted GitHub issues. This workflow gave us a clear overview of our progress and allowed us to link our planning directly to working on the task by creating branches and Pull Requests directly from specific issues. \newline
+
+\noindent Our group practiced an informal approach to pair programming, where we collaborated on tasks without using structured roles like navigator and driver, or systematic switching between them. This lack of structure meant we did not mark our commits as co-authored. Similarly, we used LLMs to help us with code generation, debugging, and general sparring, but this use of AI was also not formally documented or credited in our commit history.\newline
+
+\noindent \noindent We did not maintain a continuous notebook or update our changelog during the project. Furthermore, we did not track the duration of tasks using \texttt{/Timespent} on the GitHub issues. Instead, we relied mainly on coordination and communication in person and online. This was not ideal as it made our work history less transparent.

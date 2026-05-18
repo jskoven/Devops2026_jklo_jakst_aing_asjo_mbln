@@ -1,63 +1,78 @@
 \section{Process' Perspective}
+
+
 \subsection{Pipelines}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\textwidth]{img/CI_CD_diagram2.png}
+    \caption{UML Activity Diagram of CI/CD}
+    \label{fig:CI/CD}
+\end{figure}
+
+
 % deployment and release of your systems
 %A complete description and illustration of stages and tools included in the CI/CD pipelines, including deployment and release of your systems.
 %How do you monitor your systems and what precisely do you monitor?
 %What do you log in your systems and how do you aggregate logs?
 %Brief description of how you security hardened your systems.
 %How do you handle availability and scaling in your systems?
-Our pipeline is automated using GitHub Actions, triggered on every push and pull request to the main branch. We defined a four-stage process for it: Test, Analyze, Build and Deploy.
+\noindent Our pipeline is automated using GitHub Actions, triggered on every push and pull request to the main branch. We defined a four-stage process for it: test, analyze, lint, build before it deploys. The flow of the pipeline can be seen in Figure \ref{fig:CI/CD}
 \subsubsection{Test stage}
-The first stage is the testing stage. We use a docker compose file to spin up the application in a separate environment alongside the dependencies it needs, to ensure that the test-environment is as identical to the deployed environment as possible. The test container then runs all our defined tests via \textit{pytest}. The container is ran with the command \textit{"--exit-code-from test"}, ensuring that the exit code from the step is pulled from the tests. This means that if a test fails, the container exits with a non-zero code which stops the pipeline from proceeding further.
+In the first stage we use a docker compose file to spin up the application in a separate environment with the necessary dependencies. A test database will be created and used in this test environment. The test container then runs all our defined tests via \textit{pytest} against the test database. Once the tests have finished the test database is disposed.  If a test fails, the container exits with a non-zero code which stops the pipeline from proceeding further. Having a containerized environment and database ensured that our test suite is isolated and no side effects on our system is caused from the test. 
 
 % Evt tilføj lidt mere ift hvilke tests, hvilke test dependencies etc her - Jeg har ik arbejdet med det så ved ik så meget om det, tror det var Asger?
 
-\subsubsection{Analyze}
-The next step involves a group of static analysis tools. Unlike the previous stage, this stage does not execute the application or start containers. Instead, it reads the source code and files to ensure security and quality standards.
-\begin{itemize}
-    \item \textbf{GitHub CodeQL}: we use CodeQL to perform an analysis of our codebase. CodeQL automatically identifies vulnerabilities such as SQL-injection points and insecure data handling, vulnerabilities that standard unit tests could miss. This step uses a list of vulnerabilities curated by GitHub's security team. This ensure that any push or pull request to main is analyzed for security before hitting the server.
-    \item \textbf{Hadolint}: Hadolint is \textit{"Smarter dockerfile linter that helps you build best practice Docker images"} \footnote{https://github.com/hadolint/hadolint}. It parses the image into an AST, and analyzes it for vulnerabilities. % Måske tilføj lidt mere om hadolint her, det her var bare lige hvad jeg kunne finde hurtigt
-    \item \textbf{Black}: A Python code formatter we've used to ensure code consistency across all our code, which serves to reduce "noise" in Git diffs, as well as ensure a consistent coding style across the codebase. While several linters / formatters exists for Python, we chose black as it seemed to be very well documented and highly regarded.
-    \item \textbf{ShellCheck}: We used ShellCheck as a part of our pipeline to analyze any shell files we had, as none of us were very well versed in shell coding. ShellCheck ensured that small bugs and errors in any shell files, such as our \textit{deploy.sh}, were picked up before being pushed to the server.
-\end{itemize}
+\subsubsection{Lint \& Analyze}
+These stages runs the static analysis tools described in \ref{pipeline}  in parallel (See \ref{fig:CI/CD}) directly against the source code without executing containers or stating the application. The steps reads the source code and files to ensure security and quality standards. If no critical vulnerabilities are found in the steps the pipeline proceeds to the next stage. 
+
 
 \subsubsection{Build}
-Once all test and analysis steps have finished, we proceed to the build stage. This stage is responsible for building the Docker images from the codebase, and checking vulnerabilities before they are then released to Dockerhub. This is done with Docker Buildx and QEMU. QEMU (\textit{Quick Emulator}) allows us to make the resulting image agnostic to which OS it is ran on. This came as a result of the team having a mix of OS architectures, namely ARM (Mac) and x86 (Windows). While this just about doubles the pipeline duration, it was a necessity for the team.
+This stage is responsible for building the Docker Images, and checking vulnerabilities before they are released to Docker Hub. The image is build with Docker Buildx and QEMU. QEMU allows us to make the resulting image agnostic to the OS on which it is running. This came as a result of the team having a mix of OS architectures, namely ARM (Mac) and x86 (Windows). \newline
 
-Before the image is pushed to a public repository, we make use of \textit{Docker Scout} to scan the image for vulnerabilities. Docker Scout creates a list of components and dependencies in the image and \textit{"matches it against a continuously updated vulnerability database"}\footnote{https://docs.docker.com/scout/} It is configured with a \textit{"fail-on: critical"} policy, ensuring that any part of the image that contains a vulnerability marked as "critical" stops the whole image from leaving the pipeline.
 
-The image is then pushed to DockerHub with credentials safely secured in GitHub Secrets. After the push, a final security analysis is done with \textit{Trivy}, a security scanner akin to Docker Scout. While this may very well be redundant, as Docker Scout and Trivy often overlap, we deemed it worth it for the potential that one might find an issue the other one did not.
+\noindent Once built, we make use of Docker Scout to scan the image for vulnerabilities. Docker scout is configured with a \texttt{fail-on: critical} policy, ensuring that if the image contains a vulnerability marked as "critical" the pipeline is aborted and the image is not pushed. If no vulnerability is found the image is pushed to Docker Hub with credentials safely secured in GitHub Secrets. As an extra layer of security Trivy runs a final security scan.\newline
 
 
 \subsubsection{Release and deployment}
-Once the image is pushed to DockerHub, the pipeline starts a SCP (Secure Copy Protocol) to synchronize a folder "\textit{remote\_files}" onto the production server. The pipeline then uses SSH to execute a script on the server, \textit{deploy.sh}, which manages three tasks:
+Once the image is pushed to Docker Hub, the pipeline starts a Secure Copy Protocol (SCP) to synchronize the folder \texttt{remote\_files} onto the production server. The pipeline then uses SSH to execute the script \texttt{deploy.sh} which manages three tasks:
 \begin{itemize}
-    \item 1: Pull the latest image image from DockerHub, the one pushed in this release.
-    \item 2: Run \textit{"docker stack deploy"}, creating a Docker Swarm to start a cluster of containers instead of just a single container.
-    \item 3: Runs \textit{"docker image prune -f"} to remove old images.
+    \item 1: Pull the latest image from Docker Hub.
+    \item 2: Run \texttt{docker stack deploy}, creating a Docker Swarm to start a cluster of containers.
+    \item 3: Run \texttt{docker image prune -f} to remove old images.
 \end{itemize}
-The Docker Swarm runs with 3 replicas, ensuring that up to 2 containers can go down at a time without causing an error for the end-user. The swarm is also running with \textit{"order: start-first"} to minimize any downtime and ensure rolling updates. This means the swarm will spin up a new container with the new image, wait till it is healthy, and only then prune the old container before continuing on to the next container. It is configured with \textit{"parallelism: 1"} to ensure only 1 of the 3 containers in the swarm is updated at a time.
+\noindent The Docker Swarm manages 3 application replicas across the two swarm nodes, ensuring that up to 2 replicas can go down at a time without causing an error for the end-user. The swarm is configured with \texttt{order: start-first} which minimizes any downtime and ensures rolling updates. The swarm will spin up a new container with the new image, once healthy  it prunes the old container before continuing on to the next container. It is configured with \texttt{parallelism: 1} to ensure only one of the three containers in the swarm is updated at a time.
 
 \subsection{Monitoring \& Logging}
 \subsubsection{Monitoring}
-\noindent We have implemented a monitoring stack using Prometheus and Grafana. Both of these are containerized and deployed as part of our docker swarm.\newline
 
-\noindent Our Prometheus instance is set up to scrape time series metrics every 5 seconds from all three replicas of the application and our Grafana instance is set up to load pre defined dashboards that visualize these metrics. The flow can be seen in figure \ref{fig:monitoring}.\newline
+\noindent Our Prometheus instance is set up to scrape time series metrics every five seconds from all three replicas of the application, and our Grafana replica is used to visualize these metrics on dashboards. The flow can be seen in figure \ref{fig:monitoring}.\newline
 
-\noindent This is all to get a real-time overview of the systems health and performance. We maintain the following three dashboards:
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\textwidth]{img/Monitoring_sequenceDiagram.png}
+    \caption{UML Sequence Diagram showing Monitoring flow}
+    \label{fig:monitoring}
+\end{figure}
+
+\noindent We maintain the following three dashboards:
 \begin{itemize}
     \item Health dashboard: Tells us the status (UP/DOWN) of the application and Prometheus itself.
     \item Performance dashboard: Visualizes various metrics of the application to give an indication of the performance. These include; total HTTP requests and rates, total HTTP failures and success rates, response time, etc.
     \item Database dashboard, showing current amount of unique users, and latest entries.
 \end{itemize}
 
+
+
 \subsubsection{Logging}
+A Promtail replica is running on each of our Docker Swarm nodes scraping for logs printed by our containers. The logs are then aggregated by Loki, and Grafana is used for vizualizing the logs. Grafana queries for logs that contain error messages from our application containers. \newpage
 
 \subsection{Security}
-\noindent We have implemented Nginx as a reverse proxy, which listens for traffic on port 80 (HTTP) \& port 443 (HTTPS). HTTP requests are redirected to HTTPS. Any incoming traffic is forwarded to our minitwit application, which is running locally on the droplet. Nginx then fetches the response and sends it back to the client. This assures we only have a single point of access. \\
+\noindent We have implemented Nginx as a reverse proxy, which listens for traffic on port 80 (HTTP) \& port 443 (HTTPS). HTTP requests are redirected to HTTPS. Any incoming traffic is forwarded to our Minitwit application, which is running locally on the droplet. Nginx then fetches the response and sends it back to the client. This assures we only have a single point of access. \\
 \noindent Certbot manages SSL certificates, ensuring all communication for end users is TLS encrypted. \\
 
-\noindent We use Uncomplicated Firewall (UFW) to only expose certain ports. 
+\noindent We use Uncomplicated Firewall (UFW) to only expose certain ports, as can be seen in Figure \ref{fig:ufw}. \newline
+
+\noindent The Docker containers running our application are running as a non-privilege user. In this way if a running container is compromised, it will not have any privileges to access or modify the underlying system.
 
 %\noindent Insert diagram of reverse proxy structure, including all used ports in application, either here or somewhere else. Similar to diagram from lecture 10/11(?). Probably covered in architecture diagram, so maybe unnecessary.\\ 
 

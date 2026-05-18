@@ -1,64 +1,83 @@
 \section{System's Perspective}
 %Design and architecture of your \textit{ITU-MiniTwit} systems. That is, list and briefly describe all technologies and tools you applied and depend on. Describe the current state of your systems, for example using results of static analysis and quality assessments.%
 
-\begin{figure}
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/Minitwit.png}}
+\subsection{Design \& Architecture}
+\begin{figure}[h]
+    \makebox[\textwidth][c]{\includegraphics[width=1.4\textwidth]{img/Minitwit.png}}
     \caption{Architecture of the MiniTwit System}
     \label{fig:minitwit_arch}
 \end{figure}
-
-\subsection{Design \& Architecture}
 \subsubsection{Application}
-The minitwit application is a webapp twitter-like clone with simple functionality where users of the application can post tweets and follow each other.The application is written in Python with Jinja templates. The application has an API that contains the same functionality as the webapp. 
-\subsubsection{Infrastructre}
-\noindent\textbf{Infrastructure}\newline
-Our system runs on three droplets hosted on DigitalOcean. Two swarm nodes form our swarm cluster. Minitwit-server 1 acts as a manager-worker and Minitwit-server 2 solely a worker. The last droplet is dedicated to hosting the sytem's Postgress database.\\
+The Minitwit web-application is a twitter-like clone with simple functionality where users of the application can post tweets and follow each other. The application is written in Python with Jinja templates. The application has an API that contains the same functionality as the web-app. 
 
-\noindent Besides managing container orchestration Mnitwit-server 1 is hosting 2 application replicas, a Promtail, Loki and Grafana replica. Minitwit-server 2 is hosting 1 application replica and a Promtail replica. Niginx is used as a reversed-proxy listening for incoming requests at port:80/443. Nginx forwards the given request and then the routing mesh of docker swarm forwards the request to an available replica. The routing mesh of the swarm ensures that each node in the cluster can handle any request regardless of which node is hosting the appropriate container. 
+
+\subsubsection{Infrastructre}
+Our system runs on three droplets hosted on DigitalOcean. Two swarm nodes form our swarm cluster. \texttt{Minitwit-server} acts as a manager-worker and \texttt{Minitwit-server 2} is solely a worker. The last droplet is dedicated to hosting the sytem's Postgress database.\\
+
+\noindent Besides managing container orchestration \texttt{Minitwit-server} is hosting two application replicas, a Promtail, Loki and Grafana replica. \texttt{Minitwit-server 2} is hosting one application replica and a Promtail replica. Niginx is used as a reversed-proxy listening for incoming requests at \texttt{port:80/443}. Nginx forwards the given request and then the routing mesh of Docker Swarm forwards the request to an available replica. The routing mesh of the swarm ensures that each node in the cluster can handle any request regardless of which node is hosting the appropriate container. \newline
+
+\noindent The swarm nodes share a \texttt{minitwit\_minitwit-network} for inter-service network communication between containers on different nodes. The containers hosted on \texttt{Minitwit-server} are part of a shared network, \texttt{minitwit-network}, which is used for local communication.
 \subsubsection{Monitoring}
-Our system monitors the web application using Prometheus, Loki, Promtail and Grafana. Docker has been used for containerization of the sytem's services.\newline 
+Our system monitors the web application using Prometheus, Loki, Promtail and Grafana. Docker has been used for containerization of the system's services.\newline 
 
 \subsection{Dependencies}
-\begin{figure}[h]
-    \makebox[\textwidth][c]{\includegraphics[width=1.4\textwidth]{img/Component_diagram-3.jpg}}
-    \caption{Component diagram of the MiniTwit system, showing provided interfaces and dependencies between the core application, database and monitoring services}
-    \label{fig:minitwit_arch}
-\end{figure}
 \subsubsection{Infrastructure}
 \begin{itemize}
     \item \textbf{DigitalOcean Droplets}: Provides the hardware (CPU, Memory, Storage) to run a Linux OS on, hosting our services.
     \item \textbf{Docker}: Allows us to containerize our services.
     \item \textbf{Docker Swarm}: A part of Docker, allowing us to handle horizontal scaling and manage container health, update strategies and general management.
-    \item \textbf{PostgreSQL}: A relational database management system, allowing us to write and read messages, log-in data and user-data concurrently.
+    \item \textbf{PostgreSQL}: A relational database management system.
 \end{itemize}
 
 \subsubsection{Application}
 \begin{itemize} 
-	\item \textbf{fastapi}: The asynchronous web framework handling routing, requests, and endpoints. 
-	\item \textbf{uvicorn}: The web server deployment dependency used to run the FastAPI application.
-	\item \textbf{Jinja2}: The template engine used for server-side rendering of user timelines and layouts. 
-	\item \textbf{sqlmodel} / \textbf{SQLAlchemy}: The ORM used to abstract database interactions into Python code. 
-	\item \textbf{psycopg2-binary}: The PostgreSQL  adapter required to handle high-concurrency network communication with our database container. 
-	\item \textbf{Werkzeug} / \textbf{itsdangerous} : Cryptographic utility relied upon for password hashing (\textbf{generate\_password\_hash}) and session tokens. 
+	\item \textbf{Fastapi}: An asynchronous web framework handling routing, requests, and endpoints. 
+	\item \textbf{uvicorn}: A web server deployment dependency used to run the FastAPI application.
+	\item \textbf{Jinja2}: A template engine used for server-side rendering of user timelines and layouts. 
+	\item \textbf{Sqlmodel} / \textbf{SQLAlchemy}: An ORM used to abstract database interactions into Python code. 
+	\item \textbf{Psycopg2-binary}: A PostgreSQL  adapter required to handle high-concurrency network communication with our database container. 
+	\item \textbf{Werkzeug} / \textbf{itsdangerous} : A Cryptographic utility relied upon for password hashing and session tokens. 
 \end{itemize}
 
 \subsubsection{Monitoring}
 \begin{itemize}
-    \item \textbf{Prometheus}: A systems monitoring toolkit used to scrape and monitor time-series metrics.
-    \item \textbf{Loki:} A log scraper that aggregates application text logs.
+    \item \textbf{Prometheus}: A monitoring toolkit used to scrape and monitor time-series metrics. 
+    \item \textbf{Loki:} An aggregation system to store the logs.
+    
     \item \textbf{Promtail}: A service attached to all containers, which streams container stdout logs to Loki.
+    
     \item \textbf{Grafana}: A data visualization and analytics web application, allowing us to query and monitor the output of the above and organize it in dashboards.
 \end{itemize}
 
-\subsubsection{Pipeline}
+\subsubsection{Pipeline} \label{pipeline}
 \begin{itemize}
     \item \textbf{GitHub Actions}: Our CI/CD platform that automates our deployment, testing and building.
     \item \textbf{Docker Buildx and QEMU}: Compilation tools allowing us to create Docker Images that are agnostic to the OS they're being run on.
     \item \textbf{Black}: A code formatting tool allowing us to ensure an identical code style.
-    \item \textbf{Hadolint}: An analysis tool that scans docker images for known vulnerabilities.
+    \item \textbf{Hadolint}: An analysis tool that scans Docker Images for known vulnerabilities.
     \item \textbf{ShellCheck}: An analysis tool that scans shell files for bugs, syntax errors and vulnerabilities.
+    \item \textbf{GitHub CodeQL:} An analysis tool that scans the code base to catch security vulnerabilities (such as SQL injection points or insecure data paths) that standard unit tests overlook.
+    \item \textbf{Docker Scout:} A tool for for scanning Docker images for vulnerabilities.  
+    \item \textbf{Trivy}: A Vulnerability scanner used to scan Docker images.
+    \item \textbf{pytest}: A testing library for python.
+    \item \textbf{Selenium}: A testing framework for UI tests.
 \end{itemize}
 
+\begin{figure}[h]
+    \makebox[\textwidth][c]{\includegraphics[width=1.4\textwidth]{img/Component_diagram-3.jpg}}
+    \caption{Component Diagram of the Minitwit system, showing provided interfaces and dependencies between the core application, database and monitoring services}
+    \label{fig:minitwit_arch}
+\end{figure}
+
 \subsection{Current System State}
-\textit{Describe the current state of your systems, for example using results of static analysis and quality assessments.}
-% for example using results of static analysis and quality assessments.
+
+\noindent Our application is still running  on a Docker Swarm cluster across DigitalOcean droplets, with traffic forwarded via Nginx. The data remains persistent on a separate, dedicated droplet running a PostgreSQL database.\newline
+\begin{figure}[h]    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{img/codeacy.png}}
+    \caption{Codacy report on repository}
+    \label{fig:minitwit_arch}
+\end{figure}
+
+\noindent The repository currently has a Grade B for overall code health,  with low code duplication (5\%) and low file complexity. However, security technical debt is an issue, with several open findings. While this is definitely a pressing issue, we unfortunately did not have the time to remedy the issues. Additionally, while a large suite of automated tests exists within the project, test coverage is reported at 0\% due to a configuration issue where the CI/CD pipeline is not yet exporting and uploading test reports to Codacy.
+
+
+\noindent Our production infrastructure is created by our (CI/CD) pipeline, which handles deployment directly to existing cloud droplets. To ensure reproducibility, we have implemented Infrastructure as Code (IaC) using Terraform. While the production site remains stable on DigitalOcean, the Terraform configurations allows others to automatically provision, configure, and tear down an identical, self-contained environment with an isolated database, and a Docker Swarm cluster. The directions to do this is outlined in the ReadMe file. One large issue with our terraform script though, is that it currently leaves the created DigitalOcean droplets open without a firewall. While we attempted to automate firewall rules, we were not able to do so, as the swarm workers would not be able to connect to the manager. Given more time, this should naturally be remedied.
