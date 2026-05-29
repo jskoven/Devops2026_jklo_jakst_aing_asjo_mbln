@@ -121,10 +121,10 @@ Once your keys are generated and your secrets file is configured, the entire liv
 
 ```bash
 # Grant execution permissions to the script
-chmod +x deploy.sh
+chmod +x terraform_deploy.sh
 
 # Execute the deployment
-./deploy.sh
+./terraform_deploy.sh
 ```
 ### Tearing Down
 To dismantle the stack and remove droplets from DigitalOcean, run this command:
