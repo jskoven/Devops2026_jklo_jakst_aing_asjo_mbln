@@ -21,30 +21,31 @@ We have a separate docker-compose file (`docker-compose.dev.yml`) that creates a
    ```
 2. Build and launch the application, local database, and monitoring services in docker:
    ```bash
-   docker compose -f docker-compose.dev.yml up --build
+   docker compose -f docker-compose-dev.yml up --build
    ```
-   If you want to remove containers and associated volumes you can run: 
-   ```bash
-   docker compose -f docker-compose-dev.yml down -v 
-   ```
-
 3. The services will then run on:
    * **Web Application:** `http://localhost:8080`
    * **Prometheus:** `http://localhost:9090`
    * **Loki:** Port `3100`
+
+  If you want to remove containers and associated volumes you can run: 
+   ```bash
+   docker compose -f docker-compose-dev.yml down -v 
+   ```
+
 
 ### Running Tests
 1. The test suite can be run in docker as well. To run the tests first navigate to the test folder:
 ```bash
 cd test/
 ```
-2. From here run the docker compose file associated with the tests. 
+2. From here, run the docker compose file associated with the tests. 
 ```
 docker compose -f docker-compose.yml up --build 
 ```
 The command will install nescessary requirements build a local application and database, and run the test against these instances. 
 
-Once the test are finished it you want to remove the containers and volumes built in the test suite. Run the command below to do so: 
+Once the test are finished, you want to remove the containers and volumes built in the test suite. Run the command below to do so: 
 
 ```
 docker compose -f docker-compose-dev.yml down -v 
