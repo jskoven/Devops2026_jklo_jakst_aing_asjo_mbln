@@ -48,7 +48,7 @@ The command will install nescessary requirements build a local application and d
 Once the test are finished, you want to remove the containers and volumes built in the test suite. Run the command below to do so: 
 
 ```
-docker compose -f docker-compose-dev.yml down -v 
+docker compose -f docker-compose.yml down -v 
 ```
 
 ---
